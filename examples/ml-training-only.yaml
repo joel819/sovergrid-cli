@@ -1,0 +1,18 @@
+# SoverGrid: ML Training Only
+# Use this config if you ONLY want to train AI models on decentralized GPUs.
+# No web hosting. No file storage. Just GPU power.
+#
+# Usage:
+#   sovergrid train
+
+app:
+  name: "my-ai-model"
+
+ml:
+  provider: "bittensor"    # Options: bittensor, gensyn, io.net, render
+  model: "llama-3"         # Your model name or identifier
+  gpu_type: "A100"         # GPU type: A100, H100, RTX4090, V100, RTX3090
+  gpu_count: 1             # Number of GPUs to rent
+  epochs: 10               # Training epochs
+  dataset: "./data/training_set.csv"
+  budget: 10.00            # Max spend for this training job (USD)

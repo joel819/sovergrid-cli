@@ -1,0 +1,17 @@
+# SoverGrid: Storage Only
+# Use this config if you ONLY want to pin files to decentralized storage.
+# No compute. No ML. Just permanent, un-censorable file hosting.
+#
+# Usage:
+#   sovergrid store
+
+app:
+  name: "my-files"
+
+storage:
+  provider: "filecoin"     # Options: filecoin, arweave, ipfs
+  pin: true                # Keep files pinned and available on the network
+
+payment:
+  token: "USDC"
+  max_budget: 2.00         # Max spend (USD)

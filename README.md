@@ -28,12 +28,25 @@ sovergrid deploy
 
 ## Commands
 
+### Full Stack
+
 | Command | Description |
 |---------|-------------|
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
-| `sovergrid deploy` | Deploy your app to the decentralized network |
+| `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
+
+### Standalone Services
+
+Each service works **completely independently**. You do not need to use all of them.
+
+| Command | Service | Description |
+|---------|---------|-------------|
+| `sovergrid train` | ML Training | Train AI models on decentralized GPUs (Bittensor, Gensyn, io.net) |
+| `sovergrid store` | Storage | Pin files to decentralized storage (Filecoin, Arweave, IPFS) |
+| `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Polybase NoSQL) |
+| `sovergrid cdn` | CDN | Distribute content via decentralized CDN (Fleek, Saturn) |
 
 ## Configuration
 
@@ -88,11 +101,35 @@ SoverGrid auto-detects your project and generates optimized Dockerfiles:
 ```
 Developer's Laptop          SoverGrid CLI              Decentralized Networks
 +-----------------+     +------------------+     +-------------------------+
-|  Python/Node    | --> |  Config Validator | --> |  Akash (Compute)        |
-|  Application    |     |  Auto-Dockerizer |     |  Filecoin (Storage)     |
-|  sovergrid.yaml |     |  Orchestrator    |     |  Smart Contract (Fees)  |
-+-----------------+     +------------------+     +-------------------------+
+|                 |     |                  |     |                         |
+|  Python/Node    |     |  Config Validator |     |  Akash     (Compute)   |
+|  Application    | --> |  Auto-Dockerizer | --> |  Filecoin  (Storage)   |
+|                 |     |  Service Router  |     |  Bittensor (ML/AI)     |
+|  sovergrid.yaml |     |                  |     |  Kwil      (Database)  |
+|                 |     |  Services:       |     |  Fleek     (CDN)       |
++-----------------+     |   compute.py     |     |                         |
+                        |   storage.py     |     |  Smart Contract Vault   |
+                        |   ml_training.py |     |  (60/20/15/5 split)    |
+                        |   database.py    |     |                         |
+                        |   cdn.py         |     +-------------------------+
+                        +------------------+
 ```
+
+Each service is an **independent Python module**. They share a common `BaseService` abstract class but have zero dependencies on each other. A bug in `ml_training.py` cannot break `compute.py`.
+
+## Examples
+
+The `examples/` folder contains ready-to-use configs for every use case:
+
+| File | Use Case | Command |
+|------|----------|---------|
+| `sovergrid.yaml` | All services combined (default) | `sovergrid deploy` |
+| `compute-only.yaml` | Just deploy an app to decentralized compute | `sovergrid deploy -c examples/compute-only.yaml` |
+| `storage-only.yaml` | Just pin files to Filecoin/IPFS | `sovergrid store -c examples/storage-only.yaml` |
+| `ml-training-only.yaml` | Just train an AI model on decentralized GPUs | `sovergrid train -c examples/ml-training-only.yaml` |
+| `database-only.yaml` | Just provision a decentralized database | `sovergrid db -c examples/database-only.yaml` |
+| `cdn-only.yaml` | Just push content to a decentralized CDN | `sovergrid cdn -c examples/cdn-only.yaml` |
+| `full-stack.yaml` | Complete infrastructure (all 5 services) | All commands |
 
 ## License
 

@@ -1,0 +1,19 @@
+# SoverGrid: CDN Only
+# Use this config if you ONLY want to distribute static content
+# via a decentralized Content Delivery Network.
+# No compute. No databases. Just global edge delivery.
+#
+# Usage:
+#   sovergrid cdn
+
+app:
+  name: "my-website-assets"
+
+cdn:
+  provider: "fleek"        # Options: fleek, saturn
+  origin: "./dist"         # Path to your static files (HTML, CSS, JS, images)
+  domain: "myapp.eth"      # Your .eth domain (optional, leave blank for auto URL)
+
+payment:
+  token: "USDC"
+  max_budget: 1.00

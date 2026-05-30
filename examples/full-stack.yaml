@@ -1,0 +1,63 @@
+# SoverGrid: Full Stack Deployment
+# Use this config when you want EVERYTHING: compute + storage +
+# ML training + database + CDN. This is the "Decentralized AWS"
+# experience where SoverGrid handles your entire infrastructure.
+#
+# Usage:
+#   sovergrid deploy    (deploys compute + storage)
+#   sovergrid train     (runs ML training independently)
+#   sovergrid db        (provisions database independently)
+#   sovergrid cdn       (pushes to CDN independently)
+#
+# Each command reads ONLY its own section from this file.
+# You can run them all, or pick just the ones you need.
+
+app:
+  name: "my-full-stack-app"
+  description: "A complete decentralized application"
+
+# ─── COMPUTE ─────────────────────────────────────────────────────
+compute:
+  provider: "akash"
+  region: "us-west"
+  resources:
+    cpu: 2
+    memory: "1Gi"
+    storage: "5Gi"
+
+# ─── STORAGE ─────────────────────────────────────────────────────
+storage:
+  provider: "filecoin"
+  pin: true
+
+# ─── ML TRAINING ─────────────────────────────────────────────────
+ml:
+  provider: "io.net"
+  model: "custom-recommendation-engine"
+  gpu_type: "RTX4090"
+  gpu_count: 2
+  epochs: 50
+  dataset: "./data/user_behavior.csv"
+  budget: 25.00
+
+# ─── DATABASE ────────────────────────────────────────────────────
+database:
+  provider: "kwil"
+  name: "app_production_db"
+  schema: "./migrations/schema.sql"
+
+# ─── CDN ─────────────────────────────────────────────────────────
+cdn:
+  provider: "fleek"
+  origin: "./frontend/dist"
+  domain: "myapp.eth"
+
+# ─── BUILD ───────────────────────────────────────────────────────
+build:
+  dockerfile: "Dockerfile"
+  port: 3000
+
+# ─── PAYMENT ─────────────────────────────────────────────────────
+payment:
+  token: "USDC"
+  max_budget: 10.00
