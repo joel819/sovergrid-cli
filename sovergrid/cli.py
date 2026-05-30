@@ -17,6 +17,11 @@ from sovergrid.logger import get_logger, Colors
 from sovergrid.config import SoverGridConfig, CONFIG_FILENAME
 from sovergrid.orchestrator import run_deployment
 from sovergrid.dockerizer import generate_dockerfile, detect_project_type
+from sovergrid.services.compute import ComputeService
+from sovergrid.services.storage import StorageService
+from sovergrid.services.ml_training import MLTrainingService
+from sovergrid.services.database import DatabaseService
+from sovergrid.services.cdn import CDNService
 
 log = get_logger(__name__)
 
@@ -187,6 +192,173 @@ def info():
         log.info(
             f"  No {CONFIG_FILENAME} in current directory.\n"
             f"  Run {Colors.CYAN}sovergrid init{Colors.RESET} to get started.\n"
+        )
+
+
+# ─── Helper: Load a single service section from sovergrid.yaml ───
+
+def _load_service_config(service_key: str, config_path: str = None) -> tuple:
+    """
+    Loads ONLY the relevant section from sovergrid.yaml for a single service.
+
+    For example, if service_key is 'ml', this returns the contents of:
+        ml:
+          provider: "bittensor"
+          model: "llama-3"
+          ...
+
+    Returns (service_config_dict, max_budget).
+    """
+    import yaml
+
+    if config_path is None:
+        config_path = os.path.join(os.getcwd(), CONFIG_FILENAME)
+
+    if not os.path.exists(config_path):
+        log.error(
+            f"No {CONFIG_FILENAME} found.\n"
+            f"  Run 'sovergrid init' first, then add a '{service_key}:' "
+            f"section to your config."
+        )
+        return None, 0
+
+    with open(config_path, "r") as f:
+        raw = yaml.safe_load(f)
+
+    if not isinstance(raw, dict):
+        log.error(f"{CONFIG_FILENAME} is empty or invalid.")
+        return None, 0
+
+    service_config = raw.get(service_key)
+    if service_config is None:
+        log.error(
+            f"No '{service_key}:' section found in your {CONFIG_FILENAME}.\n"
+            f"  Add a '{service_key}:' block to use this service standalone."
+        )
+        return None, 0
+
+    # Budget comes from the service block first, then payment block, then default
+    max_budget = service_config.get(
+        "budget",
+        raw.get("payment", {}).get("max_budget", 5.00)
+    )
+
+    return service_config, float(max_budget)
+
+
+# ─── Standalone Service Commands ─────────────────────────────────
+
+@cli.command()
+@click.option(
+    "--config", "-c", default=None,
+    help="Path to sovergrid.yaml.",
+)
+def train(config):
+    """Train an AI model on decentralized GPUs (standalone)."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Starting ML Training service...\n")
+
+    service_config, max_budget = _load_service_config("ml", config)
+    if service_config is None:
+        return
+
+    service = MLTrainingService(config=service_config, max_budget=max_budget)
+    result = asyncio.run(service.run())
+
+    if result and result.status != "failed":
+        log.info(
+            f"\n  {Colors.BOLD}Training complete:{Colors.RESET}\n"
+            f"  Job:    {result.metadata.get('job_id', 'N/A')}\n"
+            f"  Model:  {result.metadata.get('model', 'N/A')}\n"
+            f"  GPUs:   {result.metadata.get('gpu_count', 'N/A')}x "
+            f"{result.metadata.get('gpu_type', 'N/A')}\n"
+            f"  Loss:   {result.metadata.get('final_loss', 'N/A')}\n"
+            f"  Cost:   ${result.cost_usd:.4f}\n"
+            f"  URL:    {Colors.CYAN}{result.endpoint}{Colors.RESET}\n"
+        )
+
+
+@cli.command()
+@click.option(
+    "--config", "-c", default=None,
+    help="Path to sovergrid.yaml.",
+)
+def store(config):
+    """Pin files to decentralized storage (standalone)."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Starting Storage service...\n")
+
+    service_config, max_budget = _load_service_config("storage", config)
+    if service_config is None:
+        return
+
+    service = StorageService(config=service_config, max_budget=max_budget)
+    result = asyncio.run(service.run())
+
+    if result and result.status != "failed":
+        log.info(
+            f"\n  {Colors.BOLD}Pinning complete:{Colors.RESET}\n"
+            f"  CID:      {result.metadata.get('cid', 'N/A')[:30]}...\n"
+            f"  Provider: {result.provider}\n"
+            f"  Cost:     ${result.cost_usd:.4f}\n"
+            f"  Gateway:  {Colors.CYAN}{result.endpoint}{Colors.RESET}\n"
+        )
+
+
+@cli.command()
+@click.option(
+    "--config", "-c", default=None,
+    help="Path to sovergrid.yaml.",
+)
+def db(config):
+    """Provision a decentralized database (standalone)."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Starting Database service...\n")
+
+    service_config, max_budget = _load_service_config("database", config)
+    if service_config is None:
+        return
+
+    service = DatabaseService(config=service_config, max_budget=max_budget)
+    result = asyncio.run(service.run())
+
+    if result and result.status != "failed":
+        log.info(
+            f"\n  {Colors.BOLD}Database ready:{Colors.RESET}\n"
+            f"  Name:       {result.metadata.get('db_name', 'N/A')}\n"
+            f"  Type:       {result.metadata.get('db_type', 'N/A')}\n"
+            f"  Provider:   {result.provider}\n"
+            f"  Cost:       ${result.cost_usd:.4f}/mo\n"
+            f"  Connection: {Colors.CYAN}"
+            f"{result.metadata.get('connection_string', 'N/A')}"
+            f"{Colors.RESET}\n"
+        )
+
+
+@cli.command()
+@click.option(
+    "--config", "-c", default=None,
+    help="Path to sovergrid.yaml.",
+)
+def cdn(config):
+    """Push content to a decentralized CDN (standalone)."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Starting CDN service...\n")
+
+    service_config, max_budget = _load_service_config("cdn", config)
+    if service_config is None:
+        return
+
+    service = CDNService(config=service_config, max_budget=max_budget)
+    result = asyncio.run(service.run())
+
+    if result and result.status != "failed":
+        log.info(
+            f"\n  {Colors.BOLD}CDN deployed:{Colors.RESET}\n"
+            f"  Provider:    {result.provider}\n"
+            f"  Edge Nodes:  {result.metadata.get('edge_nodes', 'N/A')}\n"
+            f"  Cost:        ${result.cost_usd:.4f}\n"
+            f"  URL:         {Colors.CYAN}{result.endpoint}{Colors.RESET}\n"
         )
 
 

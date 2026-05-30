@@ -1,11 +1,21 @@
 # SoverGrid Example Configuration
 # Place this file in the root of your project as 'sovergrid.yaml'
+#
+# MICROSERVICES ARCHITECTURE:
+# Each section below is an independent service. You only need to
+# include the sections for the services you actually want to use.
+#
+# Examples:
+#   - Only want ML training?  Keep just 'app:' and 'ml:'
+#   - Only want file storage?  Keep just 'app:' and 'storage:'
+#   - Want the full stack?  Keep everything.
 
 app:
   name: "my-web-app"
   description: "A simple Node.js API server"
 
-# Compute provider configuration
+# ─── COMPUTE (sovergrid deploy) ──────────────────────────────────
+# Deploys containerized apps to decentralized compute networks.
 compute:
   provider: "akash"        # Options: akash, spheron, golem
   region: "us-west"        # Preferred region
@@ -14,17 +24,44 @@ compute:
     memory: "512Mi"        # Memory allocation
     storage: "1Gi"         # Persistent storage
 
-# Storage provider for static assets (optional)
+# ─── STORAGE (sovergrid store) ───────────────────────────────────
+# Pins files and static assets to decentralized storage.
 storage:
   provider: "filecoin"     # Options: filecoin, arweave, ipfs
   pin: true                # Keep files pinned and available
 
-# Build configuration
+# ─── ML TRAINING (sovergrid train) ───────────────────────────────
+# Trains AI models on decentralized GPU networks.
+ml:
+  provider: "bittensor"    # Options: bittensor, gensyn, io.net, render
+  model: "llama-3"         # Model name or identifier
+  gpu_type: "A100"         # GPU type to request
+  gpu_count: 1             # Number of GPUs
+  epochs: 10               # Training epochs
+  dataset: "./data/training_set.csv"
+  budget: 10.00            # Max budget for this service (USD)
+
+# ─── DATABASE (sovergrid db) ─────────────────────────────────────
+# Provisions decentralized SQL or NoSQL databases.
+database:
+  provider: "kwil"         # Options: kwil, polybase
+  name: "my_app_db"        # Database name
+  schema: "./schema.sql"   # Path to schema file (optional)
+
+# ─── CDN (sovergrid cdn) ─────────────────────────────────────────
+# Distributes static content via decentralized CDN.
+cdn:
+  provider: "fleek"        # Options: fleek, saturn
+  origin: "./dist"         # Path to static files
+  domain: "myapp.eth"      # Custom .eth domain (optional)
+
+# ─── BUILD ───────────────────────────────────────────────────────
 build:
   dockerfile: "Dockerfile" # Path to Dockerfile (auto-generated if missing)
   port: 8080               # Port your application listens on
 
-# Payment configuration (used in Phase 3+)
+# ─── PAYMENT ─────────────────────────────────────────────────────
+# Global payment config. Individual services can override with 'budget:'.
 payment:
   token: "USDC"            # Payment token: USDC or SVR
-  max_budget: 5.00         # Maximum monthly spend in USD
+  max_budget: 5.00         # Default maximum spend in USD
