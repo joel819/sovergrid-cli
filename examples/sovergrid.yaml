@@ -1,0 +1,30 @@
+# SoverGrid Example Configuration
+# Place this file in the root of your project as 'sovergrid.yaml'
+
+app:
+  name: "my-web-app"
+  description: "A simple Node.js API server"
+
+# Compute provider configuration
+compute:
+  provider: "akash"        # Options: akash, spheron, golem
+  region: "us-west"        # Preferred region
+  resources:
+    cpu: 1                 # Number of CPU cores
+    memory: "512Mi"        # Memory allocation
+    storage: "1Gi"         # Persistent storage
+
+# Storage provider for static assets (optional)
+storage:
+  provider: "filecoin"     # Options: filecoin, arweave, ipfs
+  pin: true                # Keep files pinned and available
+
+# Build configuration
+build:
+  dockerfile: "Dockerfile" # Path to Dockerfile (auto-generated if missing)
+  port: 8080               # Port your application listens on
+
+# Payment configuration (used in Phase 3+)
+payment:
+  token: "USDC"            # Payment token: USDC or SVR
+  max_budget: 5.00         # Maximum monthly spend in USD

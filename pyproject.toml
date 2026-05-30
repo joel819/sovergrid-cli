@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sovergrid"
+version = "0.1.0"
+description = "The one-click, un-censorable decentralized AWS."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Joel", email = "joel@sovergrid.eth"},
+]
+keywords = ["depin", "web3", "akash", "filecoin", "decentralized", "cloud", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "click>=8.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+sovergrid = "sovergrid.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/sovergrid/sovergrid-cli"
+Documentation = "https://docs.sovergrid.eth.limo"
+Repository = "https://github.com/sovergrid/sovergrid-cli"
+Issues = "https://github.com/sovergrid/sovergrid-cli/issues"
+
+[tool.setuptools.packages.find]
+include = ["sovergrid*"]

@@ -1,0 +1,2 @@
+[console_scripts]
+sovergrid = sovergrid.cli:main

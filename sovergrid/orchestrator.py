@@ -1,0 +1,216 @@
+"""
+SoverGrid Mock Orchestrator
+Simulates deploying code to Akash (compute) and Filecoin (storage).
+
+This is Project 2: The Mock Orchestrator.
+All API calls here are fake. They simulate the real flow so Joel
+can study the architecture before connecting real DePIN networks.
+"""
+
+import asyncio
+import random
+import time
+from dataclasses import dataclass
+
+from sovergrid.config import SoverGridConfig
+from sovergrid.logger import get_logger, Colors
+
+log = get_logger(__name__)
+
+
+@dataclass
+class CostBreakdown:
+    """
+    Represents the fee split for a single deployment.
+    Maps directly to the tokenomics in SoverGrid_Payment_Routing.md:
+      60% -> Compute Provider (Akash/Spheron)
+      20% -> SoverGrid Treasury
+      15% -> SVR Stakers
+       5% -> Auto-Liquidity Pool
+    """
+    base_cost: float          # What the compute provider charges
+    treasury_fee: float       # 20% to SoverGrid Foundation
+    staker_reward: float      # 15% to SVR token stakers
+    liquidity_fee: float      # 5% auto-routed to Uniswap pool
+    total: float              # What the developer actually pays
+
+    def display(self) -> str:
+        return (
+            f"\n"
+            f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
+            f"  {Colors.BOLD}Cost Breakdown{Colors.RESET}\n"
+            f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
+            f"  Compute ({self.provider}):    ${self.base_cost:.4f}\n"
+            f"  Treasury (20%):        ${self.treasury_fee:.4f}\n"
+            f"  Staker Rewards (15%):  ${self.staker_reward:.4f}\n"
+            f"  Auto-Liquidity (5%):   ${self.liquidity_fee:.4f}\n"
+            f"  {Colors.DIM}{'-' * 40}{Colors.RESET}\n"
+            f"  {Colors.BOLD}{Colors.GREEN}Total:                  "
+            f"${self.total:.4f}{Colors.RESET}\n"
+        )
+
+    provider: str = "akash"
+
+
+def calculate_cost(base_cost: float, provider: str = "akash") -> CostBreakdown:
+    """
+    Calculates the full fee split from a base compute cost.
+    The base cost is what the decentralized network charges.
+    SoverGrid adds its fees on top.
+
+    In the real implementation, base_cost will come from pinging
+    the Akash/Spheron marketplace API for live pricing.
+    """
+    treasury_fee = base_cost * 0.20
+    staker_reward = base_cost * 0.15
+    liquidity_fee = base_cost * 0.05
+    total = base_cost + treasury_fee + staker_reward + liquidity_fee
+
+    return CostBreakdown(
+        base_cost=base_cost,
+        treasury_fee=treasury_fee,
+        staker_reward=staker_reward,
+        liquidity_fee=liquidity_fee,
+        total=total,
+        provider=provider,
+    )
+
+
+async def _simulate_api_call(provider: str, action: str, duration: float):
+    """
+    Simulates an async API call with realistic timing.
+    In the real implementation, this will be an actual HTTP request
+    to the Akash or Filecoin API.
+    """
+    log.info(f"Connecting to {provider}...")
+    await asyncio.sleep(duration * 0.3)
+
+    log.info(f"Uploading container image to {provider}...")
+    await asyncio.sleep(duration * 0.4)
+
+    log.info(f"Waiting for {provider} to confirm {action}...")
+    await asyncio.sleep(duration * 0.3)
+
+
+async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
+    """
+    MOCK: Simulates deploying a containerized app to a compute network.
+    """
+    log.info(
+        f"Deploying '{config.app_name}' to {provider.title()} Network "
+        f"({config.compute_region})..."
+    )
+
+    duration = random.uniform(1.5, 3.0)
+    await _simulate_api_call(provider.title(), "deployment", duration)
+
+    deploy_id = f"{provider}-{random.randint(100000, 999999)}"
+
+    log.info(
+        f"{Colors.GREEN}{provider.title()} deployment successful.{Colors.RESET} "
+        f"ID: {deploy_id}"
+    )
+
+    return {
+        "provider": provider,
+        "deployment_id": deploy_id,
+        "status": "active",
+        "endpoint": f"https://{deploy_id}.{provider}.network",
+        "cpu": config.cpu,
+        "memory": config.memory,
+    }
+
+
+async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
+    """
+    MOCK: Simulates pinning static assets to Filecoin/IPFS.
+    """
+    if config.storage_provider != "filecoin":
+        log.debug("Skipping Filecoin (storage provider is not filecoin).")
+        return None
+
+    log.info("Pinning static assets to Filecoin/IPFS...")
+
+    duration = random.uniform(1.0, 2.0)
+    await _simulate_api_call("Filecoin", "pinning", duration)
+
+    fake_cid = f"Qm{random.randint(10**44, 10**45 - 1)}"
+
+    log.info(
+        f"{Colors.GREEN}Filecoin pinning successful.{Colors.RESET} "
+        f"CID: {fake_cid[:20]}..."
+    )
+
+    return {
+        "provider": "filecoin",
+        "cid": fake_cid,
+        "status": "pinned",
+        "gateway_url": f"https://ipfs.io/ipfs/{fake_cid}",
+    }
+
+
+async def run_deployment(config: SoverGridConfig) -> dict:
+    """
+    Orchestrates a full mock deployment with Fallbacks & Cost Protection.
+    """
+    log.info(f"Starting deployment pipeline for '{config.app_name}'...")
+    log.info(f"Config summary:{config.summary()}")
+
+    start_time = time.time()
+
+    active_provider = config.compute_provider
+    base_compute_cost = round(random.uniform(0.30, 0.80), 4)
+    cost = calculate_cost(base_compute_cost, provider=active_provider)
+
+    # 1. Cost Protection Check
+    if cost.total > config.max_budget:
+        log.error(f"Deployment canceled! Provider cost (${cost.total:.4f}) exceeds your max_budget (${config.max_budget:.4f}).")
+        return None
+
+    # 2. Simulate Provider Outage & Fallback
+    # 20% chance Akash fails so we can test the Spheron fallback
+    if active_provider == "akash" and random.random() < 0.2:
+        log.error("Akash Network is currently unreachable or bidding failed.")
+        log.warning("Attempting automatic fallback to Spheron Network...")
+        
+        fallback_base_cost = round(random.uniform(0.40, 0.90), 4)
+        fallback_cost = calculate_cost(fallback_base_cost, provider="spheron")
+        
+        # Protect against expensive fallbacks!
+        if fallback_cost.total > config.max_budget:
+            log.error(f"Fallback to Spheron canceled. Cost (${fallback_cost.total:.4f}) exceeds your max_budget (${config.max_budget:.4f}).")
+            log.error("Please increase your max_budget in sovergrid.yaml or try again later.")
+            return None
+            
+        log.info(f"{Colors.GREEN}Fallback approved. Spheron is within budget.${Colors.RESET}")
+        active_provider = "spheron"
+        cost = fallback_cost
+
+    # 3. Run compute and storage deployments concurrently
+    compute_task = deploy_compute(config, provider=active_provider)
+    storage_task = deploy_to_filecoin(config)
+    
+    compute_result, filecoin_result = await asyncio.gather(compute_task, storage_task)
+
+    elapsed = round(time.time() - start_time, 2)
+
+    log.info(
+        f"\n"
+        f"  {Colors.BOLD}{Colors.GREEN}"
+        f"  Deployment Complete{Colors.RESET}\n"
+        f"  Time: {elapsed}s\n"
+        f"  Endpoint: {compute_result['endpoint']}\n"
+        f"{cost.display()}"
+    )
+
+    return {
+        "app_name": config.app_name,
+        "compute": compute_result,
+        "storage": filecoin_result,
+        "cost": {
+            "base": cost.base_cost,
+            "total": cost.total,
+            "currency": config.payment_token,
+        },
+        "elapsed_seconds": elapsed,
+    }

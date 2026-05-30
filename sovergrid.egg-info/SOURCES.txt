@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+sovergrid/__init__.py
+sovergrid/cli.py
+sovergrid/config.py
+sovergrid/dockerizer.py
+sovergrid/logger.py
+sovergrid/orchestrator.py
+sovergrid.egg-info/PKG-INFO
+sovergrid.egg-info/SOURCES.txt
+sovergrid.egg-info/dependency_links.txt
+sovergrid.egg-info/entry_points.txt
+sovergrid.egg-info/requires.txt
+sovergrid.egg-info/top_level.txt
