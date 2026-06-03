@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from sovergrid.config import SoverGridConfig
 from sovergrid.logger import get_logger, Colors
+from sovergrid.services.compute import COMPUTE_PROVIDERS
 
 log = get_logger(__name__)
 
@@ -159,6 +160,22 @@ async def run_deployment(config: SoverGridConfig) -> dict:
     start_time = time.time()
 
     active_provider = config.compute_provider
+
+    if getattr(config, 'green', False):
+        green_providers = [
+            p for p, data in COMPUTE_PROVIDERS.items() 
+            if data.get("green_certified", False)
+        ]
+        
+        if not green_providers:
+            log.error("No green-certified providers available. Remove green: true to use all providers.")
+            return None
+            
+        if active_provider not in green_providers:
+            log.warning(f"Preferred provider '{active_provider}' is not green-certified.")
+            active_provider = green_providers[0]
+            log.warning(f"Auto-switching to green provider: '{active_provider}'")
+
     base_compute_cost = round(random.uniform(0.30, 0.80), 4)
     cost = calculate_cost(base_compute_cost, provider=active_provider)
 

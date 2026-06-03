@@ -44,6 +44,10 @@ compute:
     memory: "512Mi"
     storage: "1Gi"
 
+# Eco-Friendly Routing
+# Set to 'true' to only use renewable energy compute providers
+green: false
+
 storage:
   provider: "filecoin"
   pin: true

@@ -29,9 +29,9 @@ log = get_logger(__name__)
 
 # Supported compute providers and their simulated price ranges (USD/hour)
 COMPUTE_PROVIDERS = {
-    "akash": {"min_price": 0.30, "max_price": 0.80, "failure_rate": 0.2},
-    "spheron": {"min_price": 0.40, "max_price": 0.90, "failure_rate": 0.05},
-    "golem": {"min_price": 0.25, "max_price": 0.70, "failure_rate": 0.1},
+    "akash": {"min_price": 0.30, "max_price": 0.80, "failure_rate": 0.2, "green_certified": False},
+    "spheron": {"min_price": 0.40, "max_price": 0.90, "failure_rate": 0.05, "green_certified": True},
+    "golem": {"min_price": 0.25, "max_price": 0.70, "failure_rate": 0.1, "green_certified": True},
 }
 
 # Fallback chain: if provider #1 fails, try #2, then #3
@@ -54,6 +54,10 @@ class ComputeService(BaseService):
     @property
     def name(self) -> str:
         return "Compute"
+
+    @property
+    def green_only(self) -> bool:
+        return self.config.get("green", False)
 
     @property
     def provider(self) -> str:

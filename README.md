@@ -48,6 +48,10 @@ Each service works **completely independently**. You do not need to use all of t
 | `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Polybase NoSQL) |
 | `sovergrid cdn` | CDN | Distribute content via decentralized CDN (Fleek, Saturn) |
 
+## Green Compute
+
+SoverGrid supports eco-friendly deployments. By adding `green: true` to your `sovergrid.yaml`, your code will only be routed to providers that are powered by renewable energy. This feature ensures that your infrastructure has a lower carbon footprint, and it will expand as more green-certified DePIN nodes join the network.
+
 ## Configuration
 
 SoverGrid uses a `sovergrid.yaml` file in your project root:

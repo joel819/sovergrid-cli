@@ -73,6 +73,7 @@ class SoverGridConfig:
         self.port: int = self._get("build.port")
         self.payment_token: str = self._get("payment.token", "USDC")
         self.max_budget: float = self._get("payment.max_budget", 5.00)
+        self.green: bool = self._get("green", False)
 
     def _get(self, dotpath: str, default: Any = None) -> Any:
         """
