@@ -35,6 +35,9 @@ SoverGrid extends beyond basic compute and storage. The Provider Plugin Architec
 ### 2.5 Decentralized Frontend Hosting & Local Preview
 SoverGrid provides a seamless "Vercel-like" experience for Web3. Developers build and test their Next.js or React applications locally (`localhost:3000`) exactly as they do in Web2, incurring zero costs. When ready, running `sovergrid deploy` automatically routes the frontend code to decentralized hosting networks like **Fleek** or **Spheron**. This replaces centralized domains with un-censorable IPFS hashes or `.eth` domains, fully decentralizing the user-facing website.
 
+### 2.6 The Self-Hosting Architecture (Dogfooding)
+To prove the resilience of the SoverGrid protocol, the entire ecosystem is hosted on the very decentralized infrastructure it provisions. The SoverGrid FastAPI backend operates directly on the Akash Network, the frontend dashboard is pinned to IPFS via Fleek, database operations run on Kwil, and domains resolve via ENS (`.eth`). This "dogfooding" approach ensures that SoverGrid's infrastructure is completely decentralized, uncensorable, and mathematically pays for its own existence without relying on traditional Web2 cloud monopolies.
+
 ---
 
 ## 3. Tokenomics & The $SVR Token
