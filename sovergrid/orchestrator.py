@@ -10,6 +10,7 @@ can study the architecture before connecting real DePIN networks.
 import asyncio
 import random
 import time
+import httpx
 from dataclasses import dataclass
 
 from sovergrid.config import SoverGridConfig
@@ -95,59 +96,82 @@ async def _simulate_api_call(provider: str, action: str, duration: float):
 
 async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
     """
-    MOCK: Simulates deploying a containerized app to a compute network.
+    Simulates deploying a containerized app to a compute network by routing
+    the request through the local FastAPI backend.
     """
     log.info(
         f"Deploying '{config.app_name}' to {provider.title()} Network "
-        f"({config.compute_region})..."
+        f"via SoverGrid Backend..."
     )
 
-    duration = random.uniform(1.5, 3.0)
-    await _simulate_api_call(provider.title(), "deployment", duration)
-
-    deploy_id = f"{provider}-{random.randint(100000, 999999)}"
-
-    log.info(
-        f"{Colors.GREEN}{provider.title()} deployment successful.{Colors.RESET} "
-        f"ID: {deploy_id}"
-    )
-
-    return {
-        "provider": provider,
-        "deployment_id": deploy_id,
-        "status": "active",
-        "endpoint": f"https://{deploy_id}.{provider}.network",
-        "cpu": config.cpu,
-        "memory": config.memory,
-    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "app_name": config.app_name,
+                "provider": provider.lower(),
+                "config": {
+                    "cpu": config.cpu,
+                    "memory": config.memory
+                }
+            }
+            response = await client.post("http://localhost:8000/deploy", json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            result_data = data.get("data", {})
+            deploy_url = result_data.get("url", f"https://{config.app_name}.{provider}.network")
+            
+            log.info(f"{Colors.GREEN}{provider.title()} deployment successful.{Colors.RESET}")
+            
+            return {
+                "provider": provider,
+                "deployment_id": "backend-managed",
+                "status": "active",
+                "endpoint": deploy_url,
+                "cpu": config.cpu,
+                "memory": config.memory,
+            }
+    except Exception as e:
+        log.error(f"Backend deployment failed: {str(e)}")
+        raise
 
 
 async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
     """
-    MOCK: Simulates pinning static assets to Filecoin/IPFS.
+    Simulates pinning static assets to Filecoin/IPFS by routing
+    the request through the local FastAPI backend.
     """
     if config.storage_provider != "filecoin":
         log.debug("Skipping Filecoin (storage provider is not filecoin).")
         return None
 
-    log.info("Pinning static assets to Filecoin/IPFS...")
+    log.info("Pinning static assets to Filecoin/IPFS via SoverGrid Backend...")
 
-    duration = random.uniform(1.0, 2.0)
-    await _simulate_api_call("Filecoin", "pinning", duration)
-
-    fake_cid = f"Qm{random.randint(10**44, 10**45 - 1)}"
-
-    log.info(
-        f"{Colors.GREEN}Filecoin pinning successful.{Colors.RESET} "
-        f"CID: {fake_cid[:20]}..."
-    )
-
-    return {
-        "provider": "filecoin",
-        "cid": fake_cid,
-        "status": "pinned",
-        "gateway_url": f"https://ipfs.io/ipfs/{fake_cid}",
-    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "app_name": config.app_name,
+                "provider": "filecoin",
+                "config": {"pin": True}
+            }
+            response = await client.post("http://localhost:8000/deploy", json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            result_data = data.get("data", {})
+            gateway_url = result_data.get("url", "ipfs://unknown")
+            
+            log.info(f"{Colors.GREEN}Filecoin pinning successful.{Colors.RESET}")
+            
+            return {
+                "provider": "filecoin",
+                "cid": gateway_url.split("/")[-1],
+                "status": "pinned",
+                "gateway_url": gateway_url,
+            }
+    except Exception as e:
+        log.error(f"Backend storage deployment failed: {str(e)}")
+        raise
 
 
 async def run_deployment(config: SoverGridConfig) -> dict:
