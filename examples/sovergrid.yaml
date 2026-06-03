@@ -14,6 +14,8 @@ app:
   name: "my-web-app"
   description: "A simple Node.js API server"
 
+green: true              # Only use providers powered by renewable energy
+
 # ─── COMPUTE (sovergrid deploy) ──────────────────────────────────
 # Deploys containerized apps to decentralized compute networks.
 compute:

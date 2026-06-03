@@ -16,6 +16,8 @@ app:
   name: "my-full-stack-app"
   description: "A complete decentralized application"
 
+green: true              # Only use providers powered by renewable energy
+
 # ─── COMPUTE ─────────────────────────────────────────────────────
 compute:
   provider: "akash"

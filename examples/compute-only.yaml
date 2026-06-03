@@ -9,6 +9,8 @@ app:
   name: "my-api-server"
   description: "A FastAPI backend running on decentralized compute"
 
+green: true              # Only use providers powered by renewable energy
+
 compute:
   provider: "akash"        # Options: akash, spheron, golem
   region: "us-west"        # Preferred region
