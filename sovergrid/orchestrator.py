@@ -11,6 +11,7 @@ import asyncio
 import random
 import time
 import httpx
+import os
 from dataclasses import dataclass
 
 from sovergrid.config import SoverGridConfig
@@ -114,7 +115,8 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
                     "memory": config.memory
                 }
             }
-            response = await client.post("http://localhost:8000/deploy", json=payload)
+            api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
+            response = await client.post(f"{api_url}/deploy", json=payload)
             response.raise_for_status()
             data = response.json()
             
@@ -154,7 +156,8 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
                 "provider": "filecoin",
                 "config": {"pin": True}
             }
-            response = await client.post("http://localhost:8000/deploy", json=payload)
+            api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
+            response = await client.post(f"{api_url}/deploy", json=payload)
             response.raise_for_status()
             data = response.json()
             
