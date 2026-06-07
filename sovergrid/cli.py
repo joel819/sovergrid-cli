@@ -7,10 +7,13 @@ Registers all terminal commands: deploy, init, status.
 """
 
 import asyncio
+import json
 import os
 import shutil
+from pathlib import Path
 
 import click
+import httpx
 
 from sovergrid import __version__, __app_name__
 from sovergrid.logger import get_logger, Colors
@@ -24,6 +27,10 @@ from sovergrid.services.database import DatabaseService
 from sovergrid.services.cdn import CDNService
 
 log = get_logger(__name__)
+
+CREDENTIALS_DIR = Path.home() / ".sovergrid"
+CREDENTIALS_FILE = CREDENTIALS_DIR / "credentials.json"
+DEFAULT_API_URL = "https://web-production-4966c.up.railway.app"
 
 
 # Default sovergrid.yaml content for `sovergrid init`
@@ -197,6 +204,102 @@ def info():
             f"  No {CONFIG_FILENAME} in current directory.\n"
             f"  Run {Colors.CYAN}sovergrid init{Colors.RESET} to get started.\n"
         )
+
+
+@cli.command()
+@click.option("--email", prompt="Email", help="Your email address.")
+@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True, help="Choose a password (min 8 chars).")
+def register(email, password):
+    """Create a new SoverGrid developer account."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Creating your account...\n")
+
+    api_url = os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+
+    try:
+        response = httpx.post(
+            f"{api_url}/auth/register",
+            json={"email": email, "password": password},
+            timeout=15.0,
+        )
+
+        if response.status_code == 409:
+            log.error("An account with this email already exists. Use 'sovergrid login' instead.")
+            return
+        if response.status_code == 400:
+            log.error(response.json().get("detail", "Invalid input."))
+            return
+
+        response.raise_for_status()
+        data = response.json()
+
+        # Save credentials
+        CREDENTIALS_DIR.mkdir(parents=True, exist_ok=True)
+        with open(CREDENTIALS_FILE, "w") as f:
+            json.dump({"access_token": data["access_token"], "email": data["email"]}, f, indent=2)
+
+        log.info(
+            f"  {Colors.GREEN}Account created successfully.{Colors.RESET}\n"
+            f"  Email: {data['email']}\n"
+            f"  Token saved to: {CREDENTIALS_FILE}\n\n"
+            f"  Run {Colors.CYAN}sovergrid deploy{Colors.RESET} to get started.\n"
+        )
+
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend. Is it running?")
+    except Exception as e:
+        log.error(f"Registration failed: {str(e)}")
+
+
+@cli.command()
+@click.option("--email", prompt="Email", help="Your email address.")
+@click.option("--password", prompt=True, hide_input=True, help="Your password.")
+def login(email, password):
+    """Log in to your SoverGrid account."""
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info("Authenticating...\n")
+
+    api_url = os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+
+    try:
+        response = httpx.post(
+            f"{api_url}/auth/login",
+            json={"email": email, "password": password},
+            timeout=15.0,
+        )
+
+        if response.status_code == 401:
+            log.error("Invalid email or password.")
+            return
+
+        response.raise_for_status()
+        data = response.json()
+
+        # Save credentials
+        CREDENTIALS_DIR.mkdir(parents=True, exist_ok=True)
+        with open(CREDENTIALS_FILE, "w") as f:
+            json.dump({"access_token": data["access_token"], "email": data["email"]}, f, indent=2)
+
+        log.info(
+            f"  {Colors.GREEN}Logged in successfully.{Colors.RESET}\n"
+            f"  Email: {data['email']}\n"
+            f"  Token saved to: {CREDENTIALS_FILE}\n"
+        )
+
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend. Is it running?")
+    except Exception as e:
+        log.error(f"Login failed: {str(e)}")
+
+
+@cli.command()
+def logout():
+    """Log out and remove saved credentials."""
+    if CREDENTIALS_FILE.exists():
+        CREDENTIALS_FILE.unlink()
+        log.info(f"{Colors.GREEN}Logged out. Credentials removed.{Colors.RESET}")
+    else:
+        log.info("No credentials found. Already logged out.")
 
 
 # ─── Helper: Load a single service section from sovergrid.yaml ───

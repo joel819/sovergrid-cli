@@ -1,24 +1,47 @@
 """
-SoverGrid Mock Orchestrator
-Simulates deploying code to Akash (compute) and Filecoin (storage).
-
-This is Project 2: The Mock Orchestrator.
-All API calls here are fake. They simulate the real flow so Joel
-can study the architecture before connecting real DePIN networks.
+SoverGrid Orchestrator
+Routes deployment requests through the SoverGrid Backend API.
+Handles compute and storage deployments concurrently with cost protection.
 """
 
 import asyncio
+import json
 import random
 import time
 import httpx
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from sovergrid.config import SoverGridConfig
 from sovergrid.logger import get_logger, Colors
 from sovergrid.services.compute import COMPUTE_PROVIDERS
 
 log = get_logger(__name__)
+
+CREDENTIALS_DIR = Path.home() / ".sovergrid"
+CREDENTIALS_FILE = CREDENTIALS_DIR / "credentials.json"
+
+
+def _load_auth_headers() -> dict:
+    """Load JWT from ~/.sovergrid/credentials.json and return as Authorization header."""
+    if not CREDENTIALS_FILE.exists():
+        log.error(
+            f"{Colors.RED}Not authenticated.{Colors.RESET}\n"
+            f"  Run {Colors.CYAN}sovergrid login{Colors.RESET} or "
+            f"{Colors.CYAN}sovergrid register{Colors.RESET} first."
+        )
+        raise SystemExit(1)
+
+    with open(CREDENTIALS_FILE, "r") as f:
+        creds = json.load(f)
+
+    token = creds.get("access_token")
+    if not token:
+        log.error("Credentials file is missing the access token. Run 'sovergrid login' again.")
+        raise SystemExit(1)
+
+    return {"Authorization": f"Bearer {token}"}
 
 
 @dataclass
@@ -105,6 +128,8 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
         f"via SoverGrid Backend..."
     )
 
+    auth_headers = _load_auth_headers()
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
@@ -116,7 +141,7 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
                 }
             }
             api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
-            response = await client.post(f"{api_url}/deploy", json=payload)
+            response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
             response.raise_for_status()
             data = response.json()
             
@@ -149,6 +174,8 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
 
     log.info("Pinning static assets to Filecoin/IPFS via SoverGrid Backend...")
 
+    auth_headers = _load_auth_headers()
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
@@ -157,7 +184,7 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
                 "config": {"pin": True}
             }
             api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
-            response = await client.post(f"{api_url}/deploy", json=payload)
+            response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
             response.raise_for_status()
             data = response.json()
             
