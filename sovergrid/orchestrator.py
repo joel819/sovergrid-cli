@@ -159,7 +159,13 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
                 "memory": config.memory,
             }
     except Exception as e:
-        log.error(f"Backend deployment failed: {str(e)}")
+        msg = str(e)
+        if hasattr(e, "response") and e.response is not None:
+            try:
+                msg = e.response.json().get("detail", str(e))
+            except:
+                pass
+        log.error(f"Backend deployment failed: {msg}")
         raise
 
 
