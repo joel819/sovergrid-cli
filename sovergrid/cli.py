@@ -100,10 +100,11 @@ def deploy(config):
     # Run the async deployment pipeline
     result = asyncio.run(run_deployment(cfg))
 
-    log.info(
-        f"\n  {Colors.BOLD}Your app is live at:{Colors.RESET} "
-        f"{Colors.CYAN}{result['compute']['endpoint']}{Colors.RESET}\n"
-    )
+    if result.get("compute"):
+        log.info(
+            f"\n  {Colors.BOLD}Your app is live at:{Colors.RESET} "
+            f"{Colors.CYAN}{result['compute'].get('endpoint', 'N/A')}{Colors.RESET}\n"
+        )
 
 
 @cli.command()
