@@ -166,7 +166,7 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
             except:
                 pass
         log.error(f"Backend deployment failed: {msg}")
-        raise
+        return None
 
 
 async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
@@ -207,7 +207,7 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
             }
     except Exception as e:
         log.error(f"Backend storage deployment failed: {str(e)}")
-        raise
+        return None
 
 
 async def run_deployment(config: SoverGridConfig) -> dict:
@@ -271,14 +271,17 @@ async def run_deployment(config: SoverGridConfig) -> dict:
 
     elapsed = round(time.time() - start_time, 2)
 
-    log.info(
-        f"\n"
-        f"  {Colors.BOLD}{Colors.GREEN}"
-        f"  Deployment Complete{Colors.RESET}\n"
-        f"  Time: {elapsed}s\n"
-        f"  Endpoint: {compute_result['endpoint']}\n"
-        f"{cost.display()}"
-    )
+    if compute_result:
+        log.info(
+            f"\n"
+            f"  {Colors.BOLD}{Colors.GREEN}"
+            f"  Deployment Complete{Colors.RESET}\n"
+            f"  Time: {elapsed}s\n"
+            f"  Endpoint: {compute_result.get('endpoint', 'N/A')}\n"
+            f"{cost.display()}"
+        )
+    else:
+        log.error(f"\n{Colors.BOLD}{Colors.RED}Deployment failed. Please check the errors above.{Colors.RESET}")
 
     return {
         "app_name": config.app_name,
