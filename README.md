@@ -2,6 +2,8 @@
 
 **The one-click, un-censorable decentralized AWS.**
 
+📚 **[Read the Official Developer Documentation](https://sovergrid-docs.vercel.app)**
+
 SoverGrid is an open-source command-line tool that deploys your applications to decentralized networks (Akash, Filecoin, Spheron, Golem) with a single command. No rewriting code. No centralized gatekeepers. No surprise bills.
 
 ## Why SoverGrid?
@@ -76,6 +78,7 @@ Each service works **completely independently**. You do not need to use all of t
 | `sovergrid store` | Storage | Pin files to decentralized storage (Filecoin, Arweave, IPFS) |
 | `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Polybase NoSQL) |
 | `sovergrid cdn` | CDN | Distribute content via decentralized CDN (Fleek, Saturn) |
+| `sovergrid secure` | Security | Integrate Web3 privacy, encryption, and KMS (Lit Protocol, Secret Network) |
 
 ## Green Compute
 
@@ -98,6 +101,12 @@ compute:
 
 storage:
   provider: "filecoin"
+
+security:
+  provider: "lit-protocol"
+  features:
+    - "decentralized_kms"
+    - "ddos_protection"
 
 build:
   port: 8080
@@ -143,8 +152,9 @@ Developer's Laptop          SoverGrid CLI              Decentralized Networks
 +-----------------+     |   compute.py     |     |                         |
                         |   storage.py     |     |  Smart Contract Vault   |
                         |   ml_training.py |     |  (60/20/15/5 split)    |
-                        |   database.py    |     |                         |
+                        |   database.py    |     |  Lit Protocol(Security) |
                         |   cdn.py         |     +-------------------------+
+                        |   security.py    |
                         +------------------+
 ```
 

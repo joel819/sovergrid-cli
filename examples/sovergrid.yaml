@@ -57,6 +57,14 @@ cdn:
   origin: "./dist"         # Path to static files
   domain: "myapp.eth"      # Custom .eth domain (optional)
 
+# ─── SECURITY (sovergrid secure) ─────────────────────────────────
+# Integrates Web3 privacy, encryption, and decentralized KMS.
+security:
+  provider: "lit-protocol"   # Options: lit-protocol, secret-network, nym
+  features:
+    - "decentralized_kms"    # Key management and encryption
+    - "ddos_protection"      # Decentralized WAF
+
 # ─── BUILD ───────────────────────────────────────────────────────
 build:
   dockerfile: "Dockerfile" # Path to Dockerfile (auto-generated if missing)
