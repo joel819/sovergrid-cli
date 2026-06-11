@@ -14,10 +14,36 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 
 ## Quick Start
 
-```bash
-# Install
-pip install sovergrid
+### 1. Installation
 
+SoverGrid CLI is cross-platform. Ensure you have Python 3.8+ installed.
+
+**Mac / Linux:**
+```bash
+pip3 install sovergrid
+```
+
+**Windows:**
+```powershell
+pip install sovergrid
+```
+
+### 2. Developer Authentication
+
+Before deploying, you need to create a developer account. This allows you to manage deployments and (in the future) fund your wallet directly.
+
+```bash
+# Register a new account
+sovergrid register
+# (You will be prompted for an email and password)
+
+# Log in to an existing account
+sovergrid login
+```
+
+### 3. Deploy Your App
+
+```bash
 # Initialize your project
 cd my-web-app
 sovergrid init
@@ -32,6 +58,9 @@ sovergrid deploy
 
 | Command | Description |
 |---------|-------------|
+| `sovergrid register` | Create a new SoverGrid developer account |
+| `sovergrid login` | Authenticate your CLI |
+| `sovergrid logout` | Log out of the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
 | `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
 | `sovergrid status` | Check the status of your active deployment |
@@ -118,6 +147,16 @@ Developer's Laptop          SoverGrid CLI              Decentralized Networks
                         |   cdn.py         |     +-------------------------+
                         +------------------+
 ```
+
+### How Deployment Works (Behind the Scenes)
+
+When you run `sovergrid deploy`, here is what happens to your code:
+1. **Zip & Ship:** The CLI securely zips your local project and sends it to the SoverGrid Backend. It does *not* push your code to GitHub.
+2. **Auto-Dockerizer:** The backend detects your framework (e.g., FastAPI, Next.js), auto-generates a `Dockerfile`, and builds your container image.
+3. **Decentralized Registry:** Your compiled container image is pushed to the SoverGrid Container Registry (backed by decentralized storage like Filecoin). We use version tagging (`v1`, `v2`), meaning your old code is never deleted, and you can instantly rollback.
+4. **Network Handoff:** The backend instructs the decentralized compute network (e.g., Akash) to pull your image from the registry and spin up your server.
+
+This means you get the simplicity of Vercel/Heroku, with the censorship-resistance of Web3.
 
 Each service is an **independent Python module**. They share a common `BaseService` abstract class but have zero dependencies on each other. A bug in `ml_training.py` cannot break `compute.py`.
 
