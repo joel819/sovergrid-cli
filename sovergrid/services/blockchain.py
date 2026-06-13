@@ -36,14 +36,27 @@ class BlockchainService:
         if self.private_key and not self.private_key.startswith("0x"):
             self.private_key = f"0x{self.private_key}"
             
-        self.contract_address = os.getenv("CONTRACT_ADDRESS")
+        self.token_address = os.getenv("CONTRACT_ADDRESS")
+        self.aggregator_address = os.getenv("AGGREGATOR_ADDRESS")
         self.token_abi = self._load_token_abi()
+        self.aggregator_abi = self._load_aggregator_abi()
 
     def _load_token_abi(self) -> Optional[list]:
         """Loads the compiled SoverGridToken ABI from the Hardhat artifacts."""
         abi_path = SMART_CONTRACTS_DIR / "artifacts" / "contracts" / "SoverGridToken.sol" / "SoverGridToken.json"
         if not abi_path.exists():
             log.warning(f"Could not find token ABI at {abi_path}. Did you compile the smart contracts?")
+            return None
+            
+        with open(abi_path, "r") as f:
+            data = json.load(f)
+            return data.get("abi")
+
+    def _load_aggregator_abi(self) -> Optional[list]:
+        """Loads the compiled SoverGridAggregator ABI from the Hardhat artifacts."""
+        abi_path = SMART_CONTRACTS_DIR / "artifacts" / "contracts" / "SoverGridAggregator.sol" / "SoverGridAggregator.json"
+        if not abi_path.exists():
+            log.warning(f"Could not find aggregator ABI at {abi_path}.")
             return None
             
         with open(abi_path, "r") as f:
@@ -77,7 +90,7 @@ class BlockchainService:
             log.error(f"{Colors.RED}No wallet address provided and PRIVATE_KEY not found in .env{Colors.RESET}")
             return None
             
-        if not self.contract_address:
+        if not self.token_address:
             log.error(f"{Colors.RED}CONTRACT_ADDRESS not found in .env. Please add it!{Colors.RESET}")
             return None
 
@@ -85,7 +98,7 @@ class BlockchainService:
             return None
 
         # Instantiate the smart contract
-        checksum_address = self.w3.to_checksum_address(self.contract_address)
+        checksum_address = self.w3.to_checksum_address(self.token_address)
         target_checksum = self.w3.to_checksum_address(target_address)
         
         try:
@@ -101,4 +114,89 @@ class BlockchainService:
             return formatted_balance
         except Exception as e:
             log.error(f"{Colors.RED}Failed to fetch balance from blockchain: {e}{Colors.RESET}")
+            return None
+
+    def pay_for_deployment(self, amount: float, provider_wallet: str) -> Optional[str]:
+        """
+        Executes the Web3 "Pay-Then-Deploy" pattern.
+        1. Approves the Aggregator contract to spend tokens.
+        2. Calls payForDeployment on the Aggregator.
+        Returns the transaction hash if successful.
+        """
+        if not self.private_key or not self.wallet_address:
+            log.error(f"{Colors.RED}Cannot process payment. No wallet found.{Colors.RESET}")
+            return None
+            
+        if not self.token_address or not self.aggregator_address:
+            log.error(f"{Colors.RED}Missing CONTRACT_ADDRESS or AGGREGATOR_ADDRESS in .env{Colors.RESET}")
+            return None
+            
+        if not self.token_abi or not self.aggregator_abi:
+            log.error(f"{Colors.RED}Missing ABIs. Compile the contracts first.{Colors.RESET}")
+            return None
+
+        try:
+            checksum_token = self.w3.to_checksum_address(self.token_address)
+            checksum_aggregator = self.w3.to_checksum_address(self.aggregator_address)
+            checksum_provider = self.w3.to_checksum_address(provider_wallet)
+            
+            token_contract = self.w3.eth.contract(address=checksum_token, abi=self.token_abi)
+            aggregator_contract = self.w3.eth.contract(address=checksum_aggregator, abi=self.aggregator_abi)
+            
+            decimals = token_contract.functions.decimals().call()
+            raw_amount = int(amount * (10 ** decimals))
+
+            # Step 1: Approve Aggregator to spend tokens
+            log.info(f"{Colors.YELLOW}Approving {amount} tokens for payment...{Colors.RESET}")
+            nonce = self.w3.eth.get_transaction_count(self.wallet_address)
+            
+            approve_txn = token_contract.functions.approve(
+                checksum_aggregator, raw_amount
+            ).build_transaction({
+                'chainId': self.w3.eth.chain_id,
+                'gas': 100000,
+                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
+                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'nonce': nonce,
+            })
+            
+            signed_approve = self.w3.eth.account.sign_transaction(approve_txn, private_key=self.private_key)
+            tx_hash_approve = self.w3.eth.send_raw_transaction(signed_approve.raw_transaction)
+            
+            # Wait for approval receipt
+            self.w3.eth.wait_for_transaction_receipt(tx_hash_approve)
+            log.info(f"{Colors.GREEN}Token approval successful.{Colors.RESET}")
+            
+            # Step 2: Call payForDeployment
+            log.info(f"{Colors.YELLOW}Executing 80/20 Payment Split...{Colors.RESET}")
+            nonce = self.w3.eth.get_transaction_count(self.wallet_address)
+            
+            pay_txn = aggregator_contract.functions.payForDeployment(
+                checksum_token, raw_amount, checksum_provider
+            ).build_transaction({
+                'chainId': self.w3.eth.chain_id,
+                'gas': 200000,
+                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
+                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'nonce': nonce,
+            })
+            
+            signed_pay = self.w3.eth.account.sign_transaction(pay_txn, private_key=self.private_key)
+            tx_hash_pay = self.w3.eth.send_raw_transaction(signed_pay.raw_transaction)
+            
+            # Wait for payment receipt
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash_pay)
+            
+            if receipt.status == 1:
+                log.info(f"{Colors.GREEN}Payment successful! Hash: {self.w3.to_hex(tx_hash_pay)}{Colors.RESET}")
+                return self.w3.to_hex(tx_hash_pay)
+            else:
+                log.error(f"{Colors.RED}Payment transaction failed.{Colors.RESET}")
+                return None
+                
+        except ContractLogicError as e:
+            log.error(f"{Colors.RED}Smart Contract Logic Error: {e}{Colors.RESET}")
+            return None
+        except Exception as e:
+            log.error(f"{Colors.RED}Failed to process blockchain payment: {e}{Colors.RESET}")
             return None

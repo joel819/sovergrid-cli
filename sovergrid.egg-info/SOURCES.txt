@@ -12,3 +12,11 @@ sovergrid.egg-info/dependency_links.txt
 sovergrid.egg-info/entry_points.txt
 sovergrid.egg-info/requires.txt
 sovergrid.egg-info/top_level.txt
+sovergrid/services/__init__.py
+sovergrid/services/base.py
+sovergrid/services/blockchain.py
+sovergrid/services/cdn.py
+sovergrid/services/compute.py
+sovergrid/services/database.py
+sovergrid/services/ml_training.py
+sovergrid/services/storage.py

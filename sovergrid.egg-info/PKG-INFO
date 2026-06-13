@@ -2,10 +2,10 @@ Metadata-Version: 2.4
 Name: sovergrid
 Version: 0.1.0
 Summary: The one-click, un-censorable decentralized AWS.
-Author-email: Joel <joel@sovergrid.io>
+Author-email: Joel <joel@sovergrid.eth>
 License: MIT
 Project-URL: Homepage, https://github.com/sovergrid/sovergrid-cli
-Project-URL: Documentation, https://docs.sovergrid.io
+Project-URL: Documentation, https://docs.sovergrid.eth.limo
 Project-URL: Repository, https://github.com/sovergrid/sovergrid-cli
 Project-URL: Issues, https://github.com/sovergrid/sovergrid-cli/issues
 Keywords: depin,web3,akash,filecoin,decentralized,cloud,cli
@@ -24,10 +24,15 @@ Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 Requires-Dist: click>=8.0
 Requires-Dist: pyyaml>=6.0
+Requires-Dist: httpx>=0.25.0
+Requires-Dist: web3>=6.0.0
+Requires-Dist: python-dotenv>=1.0.0
 
 # SoverGrid CLI
 
 **The one-click, un-censorable decentralized AWS.**
+
+📚 **[Read the Official Developer Documentation](https://sovergrid-docs.vercel.app)**
 
 SoverGrid is an open-source command-line tool that deploys your applications to decentralized networks (Akash, Filecoin, Spheron, Golem) with a single command. No rewriting code. No centralized gatekeepers. No surprise bills.
 
@@ -41,10 +46,36 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 
 ## Quick Start
 
-```bash
-# Install
-pip install sovergrid
+### 1. Installation
 
+SoverGrid CLI is cross-platform. Ensure you have Python 3.8+ installed.
+
+**Mac / Linux:**
+```bash
+pip3 install sovergrid
+```
+
+**Windows:**
+```powershell
+pip install sovergrid
+```
+
+### 2. Developer Authentication
+
+Before deploying, you need to create a developer account. This allows you to manage deployments and (in the future) fund your wallet directly.
+
+```bash
+# Register a new account
+sovergrid register
+# (You will be prompted for an email and password)
+
+# Log in to an existing account
+sovergrid login
+```
+
+### 3. Deploy Your App
+
+```bash
 # Initialize your project
 cd my-web-app
 sovergrid init
@@ -55,12 +86,33 @@ sovergrid deploy
 
 ## Commands
 
+### Full Stack
+
 | Command | Description |
 |---------|-------------|
+| `sovergrid register` | Create a new SoverGrid developer account |
+| `sovergrid login` | Authenticate your CLI |
+| `sovergrid logout` | Log out of the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
-| `sovergrid deploy` | Deploy your app to the decentralized network |
+| `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
+
+### Standalone Services
+
+Each service works **completely independently**. You do not need to use all of them.
+
+| Command | Service | Description |
+|---------|---------|-------------|
+| `sovergrid train` | ML Training | Train AI models on decentralized GPUs (Bittensor, Gensyn, io.net) |
+| `sovergrid store` | Storage | Pin files to decentralized storage (Filecoin, Arweave, IPFS) |
+| `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Polybase NoSQL) |
+| `sovergrid cdn` | CDN | Distribute content via decentralized CDN (Fleek, Saturn) |
+| `sovergrid secure` | Security | Integrate Web3 privacy, encryption, and KMS (Lit Protocol, Secret Network) |
+
+## Green Compute
+
+SoverGrid supports eco-friendly deployments. By adding `green: true` to your `sovergrid.yaml`, your code will only be routed to providers that are powered by renewable energy. This feature ensures that your infrastructure has a lower carbon footprint, and it will expand as more green-certified DePIN nodes join the network.
 
 ## Configuration
 
@@ -79,6 +131,12 @@ compute:
 
 storage:
   provider: "filecoin"
+
+security:
+  provider: "lit-protocol"
+  features:
+    - "decentralized_kms"
+    - "ddos_protection"
 
 build:
   port: 8080
@@ -115,11 +173,46 @@ SoverGrid auto-detects your project and generates optimized Dockerfiles:
 ```
 Developer's Laptop          SoverGrid CLI              Decentralized Networks
 +-----------------+     +------------------+     +-------------------------+
-|  Python/Node    | --> |  Config Validator | --> |  Akash (Compute)        |
-|  Application    |     |  Auto-Dockerizer |     |  Filecoin (Storage)     |
-|  sovergrid.yaml |     |  Orchestrator    |     |  Smart Contract (Fees)  |
-+-----------------+     +------------------+     +-------------------------+
+|                 |     |                  |     |                         |
+|  Python/Node    |     |  Config Validator |     |  Akash     (Compute)   |
+|  Application    | --> |  Auto-Dockerizer | --> |  Filecoin  (Storage)   |
+|                 |     |  Service Router  |     |  Bittensor (ML/AI)     |
+|  sovergrid.yaml |     |                  |     |  Kwil      (Database)  |
+|                 |     |  Services:       |     |  Fleek     (CDN)       |
++-----------------+     |   compute.py     |     |                         |
+                        |   storage.py     |     |  Smart Contract Vault   |
+                        |   ml_training.py |     |  (60/20/15/5 split)    |
+                        |   database.py    |     |  Lit Protocol(Security) |
+                        |   cdn.py         |     +-------------------------+
+                        |   security.py    |
+                        +------------------+
 ```
+
+### How Deployment Works (Behind the Scenes)
+
+When you run `sovergrid deploy`, here is what happens to your code:
+1. **Zip & Ship:** The CLI securely zips your local project and sends it to the SoverGrid Backend. It does *not* push your code to GitHub.
+2. **Auto-Dockerizer:** The backend detects your framework (e.g., FastAPI, Next.js), auto-generates a `Dockerfile`, and builds your container image.
+3. **Decentralized Registry:** Your compiled container image is pushed to the SoverGrid Container Registry (backed by decentralized storage like Filecoin). We use version tagging (`v1`, `v2`), meaning your old code is never deleted, and you can instantly rollback.
+4. **Network Handoff:** The backend instructs the decentralized compute network (e.g., Akash) to pull your image from the registry and spin up your server.
+
+This means you get the simplicity of Vercel/Heroku, with the censorship-resistance of Web3.
+
+Each service is an **independent Python module**. They share a common `BaseService` abstract class but have zero dependencies on each other. A bug in `ml_training.py` cannot break `compute.py`.
+
+## Examples
+
+The `examples/` folder contains ready-to-use configs for every use case:
+
+| File | Use Case | Command |
+|------|----------|---------|
+| `sovergrid.yaml` | All services combined (default) | `sovergrid deploy` |
+| `compute-only.yaml` | Just deploy an app to decentralized compute | `sovergrid deploy -c examples/compute-only.yaml` |
+| `storage-only.yaml` | Just pin files to Filecoin/IPFS | `sovergrid store -c examples/storage-only.yaml` |
+| `ml-training-only.yaml` | Just train an AI model on decentralized GPUs | `sovergrid train -c examples/ml-training-only.yaml` |
+| `database-only.yaml` | Just provision a decentralized database | `sovergrid db -c examples/database-only.yaml` |
+| `cdn-only.yaml` | Just push content to a decentralized CDN | `sovergrid cdn -c examples/cdn-only.yaml` |
+| `full-stack.yaml` | Complete infrastructure (all 5 services) | All commands |
 
 ## License
 

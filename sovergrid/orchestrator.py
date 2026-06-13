@@ -118,17 +118,35 @@ async def _simulate_api_call(provider: str, action: str, duration: float):
     await asyncio.sleep(duration * 0.3)
 
 
-async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
+async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreakdown) -> dict:
     """
     Simulates deploying a containerized app to a compute network by routing
     the request through the local FastAPI backend.
     """
+    from sovergrid.services.blockchain import BlockchainService
+
     log.info(
         f"Deploying '{config.app_name}' to {provider.title()} Network "
         f"via SoverGrid Backend..."
     )
 
     auth_headers = _load_auth_headers()
+
+    # Step 1: Web3 Payment Routing
+    blockchain = BlockchainService()
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Deployment failed. Cannot connect to blockchain.{Colors.RESET}")
+        return None
+        
+    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for {cost.total:.4f} USDC...{Colors.RESET}")
+    provider_wallet = "0x" + "1" * 40  # Dummy provider wallet
+    tx_hash = blockchain.pay_for_deployment(cost.total, provider_wallet)
+    
+    if not tx_hash:
+        log.error(f"{Colors.RED}Deployment aborted. Payment failed.{Colors.RESET}")
+        return None
+
+    log.info(f"{Colors.GREEN}Payment Secured. Transaction Hash: {tx_hash}{Colors.RESET}")
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -138,7 +156,8 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
                 "config": {
                     "cpu": config.cpu,
                     "memory": config.memory
-                }
+                },
+                "transaction_hash": tx_hash
             }
             api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
             response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
@@ -264,7 +283,7 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         cost = fallback_cost
 
     # 3. Run compute and storage deployments concurrently
-    compute_task = deploy_compute(config, provider=active_provider)
+    compute_task = deploy_compute(config, provider=active_provider, cost=cost)
     storage_task = deploy_to_filecoin(config)
     
     compute_result, filecoin_result = await asyncio.gather(compute_task, storage_task)

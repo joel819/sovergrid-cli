@@ -22,6 +22,7 @@ import random
 from typing import Optional
 
 from sovergrid.services.base import BaseService, ServiceResult
+from sovergrid.services.blockchain import BlockchainService
 from sovergrid.logger import get_logger, Colors
 
 log = get_logger(__name__)
@@ -142,6 +143,38 @@ class ComputeService(BaseService):
         Deploys to the configured provider with automatic fallback.
         If the primary provider fails, it walks down the fallback chain.
         """
+        cost = self.estimate_cost()
+        log.info(f"{Colors.CYAN}[Compute] Estimated deployment cost: {cost} USDC/tokens{Colors.RESET}")
+        
+        # Step 1: Execute Web3 Payment
+        blockchain = BlockchainService()
+        if not blockchain.is_connected:
+            log.error(f"{Colors.RED}[Compute] Deployment failed. Cannot connect to blockchain.{Colors.RESET}")
+            return ServiceResult(
+                service_name="compute",
+                provider="none",
+                status="failed",
+                metadata={"error": "Blockchain connection failed."}
+            )
+            
+        log.info(f"{Colors.YELLOW}[Compute] Initiating Web3 Payment Routing...{Colors.RESET}")
+        
+        # We use a dummy provider wallet here for the prototype. In production, this would be 
+        # fetched from the Provider Plugin's metadata.
+        provider_wallet = "0x" + "1" * 40
+        tx_hash = blockchain.pay_for_deployment(cost, provider_wallet)
+        
+        if not tx_hash:
+            log.error(f"{Colors.RED}[Compute] Deployment aborted. Payment failed.{Colors.RESET}")
+            return ServiceResult(
+                service_name="compute",
+                provider="none",
+                status="failed",
+                metadata={"error": "Payment transaction failed."}
+            )
+
+        log.info(f"{Colors.GREEN}[Compute] Payment Secured. Transaction Hash: {tx_hash}{Colors.RESET}")
+
         # Build fallback chain starting with the user's preferred provider
         chain = [self.provider] + [
             p for p in FALLBACK_CHAIN if p != self.provider
@@ -165,6 +198,7 @@ class ComputeService(BaseService):
                         "cpu": self.cpu,
                         "memory": self.memory,
                         "region": self.region,
+                        "payment_hash": tx_hash,
                     },
                 )
 
