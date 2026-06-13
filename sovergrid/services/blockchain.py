@@ -37,8 +37,10 @@ class BlockchainService:
             self.private_key = f"0x{self.private_key}"
             
         self.token_address = os.getenv("CONTRACT_ADDRESS")
+        self.mock_usdc_address = os.getenv("MOCK_USDC_ADDRESS", self.token_address)
         self.aggregator_address = os.getenv("AGGREGATOR_ADDRESS")
         self.token_abi = self._load_token_abi()
+        self.mock_usdc_abi = self._load_mock_usdc_abi()
         self.aggregator_abi = self._load_aggregator_abi()
 
     def _load_token_abi(self) -> Optional[list]:
@@ -46,6 +48,17 @@ class BlockchainService:
         abi_path = SMART_CONTRACTS_DIR / "artifacts" / "contracts" / "SoverGridToken.sol" / "SoverGridToken.json"
         if not abi_path.exists():
             log.warning(f"Could not find token ABI at {abi_path}. Did you compile the smart contracts?")
+            return None
+            
+        with open(abi_path, "r") as f:
+            data = json.load(f)
+            return data.get("abi")
+
+    def _load_mock_usdc_abi(self) -> Optional[list]:
+        """Loads the compiled MockUSDC ABI from the Hardhat artifacts."""
+        abi_path = SMART_CONTRACTS_DIR / "artifacts" / "contracts" / "MockUSDC.sol" / "MockUSDC.json"
+        if not abi_path.exists():
+            log.warning(f"Could not find MockUSDC ABI at {abi_path}.")
             return None
             
         with open(abi_path, "r") as f:
@@ -200,3 +213,52 @@ class BlockchainService:
         except Exception as e:
             log.error(f"{Colors.RED}Failed to process blockchain payment: {e}{Colors.RESET}")
             return None
+
+    def request_faucet_usdc(self, target_wallet: str) -> tuple[bool, Optional[str]]:
+        """
+        Calls the faucet() function on the MockUSDC contract.
+        """
+        if not self.private_key or not self.wallet_address:
+            log.error(f"{Colors.RED}Cannot process faucet. No wallet found.{Colors.RESET}")
+            return False, None
+            
+        if not self.mock_usdc_address or not self.mock_usdc_abi:
+            log.error(f"{Colors.RED}Missing MOCK_USDC_ADDRESS in .env or missing ABI.{Colors.RESET}")
+            return False, None
+
+        try:
+            checksum_usdc = self.w3.to_checksum_address(self.mock_usdc_address)
+            usdc_contract = self.w3.eth.contract(address=checksum_usdc, abi=self.mock_usdc_abi)
+            
+            nonce = self.w3.eth.get_transaction_count(self.wallet_address)
+            
+            # The target_wallet argument is not used in the contract because faucet() mints to msg.sender
+            # We assume target_wallet is the same as the derived wallet_address
+            if target_wallet.lower() != self.wallet_address.lower():
+                log.error(f"{Colors.RED}Faucet can only mint to the calling wallet.{Colors.RESET}")
+                return False, None
+            
+            faucet_txn = usdc_contract.functions.faucet().build_transaction({
+                'chainId': self.w3.eth.chain_id,
+                'gas': 100000,
+                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
+                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'nonce': nonce,
+            })
+            
+            signed_txn = self.w3.eth.account.sign_transaction(faucet_txn, private_key=self.private_key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            if receipt.status == 1:
+                return True, self.w3.to_hex(tx_hash)
+            else:
+                return False, None
+                
+        except ContractLogicError as e:
+            log.error(f"{Colors.RED}Faucet Smart Contract Logic Error (Maybe cooldown?): {e}{Colors.RESET}")
+            return False, None
+        except Exception as e:
+            log.error(f"{Colors.RED}Failed to process faucet request: {e}{Colors.RESET}")
+            return False, None

@@ -337,6 +337,39 @@ def balance(address: str = None):
         log.error("Could not retrieve token balance. Have you set CONTRACT_ADDRESS in .env?")
 
 
+@cli.command()
+@click.argument("address", required=False)
+def faucet(address: str = None):
+    """
+    Mint $1,000 of free testnet USDC to your wallet for testing.
+    """
+    log.info(f"{Colors.BLUE}Connecting to Sepolia blockchain for Faucet...{Colors.RESET}")
+    
+    blockchain = BlockchainService()
+    
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Failed to connect to the Ethereum network. Check your internet or RPC.{Colors.RESET}")
+        return
+        
+    target_wallet = address or blockchain.wallet_address
+    if not target_wallet:
+        log.error(f"{Colors.RED}No wallet address provided and no PRIVATE_KEY found in .env.{Colors.RESET}")
+        return
+        
+    log.info(f"{Colors.YELLOW}Requesting $1,000 MockUSDC for wallet: {target_wallet}...{Colors.RESET}")
+    
+    success, tx_hash = blockchain.request_faucet_usdc(target_wallet)
+    
+    if success:
+        log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
+        log.info(f"{Colors.GREEN}✅ FAUCET SUCCESS: $1,000 MockUSDC minted!{Colors.RESET}")
+        log.info(f"{Colors.GREEN}Tx Hash: {tx_hash}{Colors.RESET}")
+        log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
+    else:
+        log.error(f"{Colors.RED}Faucet request failed. You may need to wait 24 hours, or check your ETH gas balance.{Colors.RESET}")
+
+
+
 # ─── Helper: Load a single service section from sovergrid.yaml ───
 
 def _load_service_config(service_key: str, config_path: str = None) -> tuple:

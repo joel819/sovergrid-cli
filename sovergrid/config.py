@@ -69,6 +69,9 @@ class SoverGridConfig:
         self.memory: str = self._get("compute.resources.memory")
         self.storage_size: str = self._get("compute.resources.storage", "512Mi")
         self.storage_provider: str = self._get("storage.provider", "filecoin")
+        self.database_provider: str = self._get("database.provider", None)
+        self.database_name: str = self._get("database.name", "default_db")
+        self.frontend_provider: str = self._get("frontend.provider", None)
         self.dockerfile: str = self._get("build.dockerfile", "Dockerfile")
         self.port: int = self._get("build.port")
         self.payment_token: str = self._get("payment.token", "USDC")
@@ -194,6 +197,8 @@ class SoverGridConfig:
             f"  CPU:      {self.cpu} core(s)\n"
             f"  Memory:   {self.memory}\n"
             f"  Storage:  {self.storage_provider}\n"
+            f"  Database: {self.database_provider or 'None'}\n"
+            f"  Frontend: {self.frontend_provider or 'None'}\n"
             f"  Port:     {self.port}\n"
             f"  Budget:   ${self.max_budget:.2f}/mo ({self.payment_token})\n"
         )

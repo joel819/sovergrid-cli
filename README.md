@@ -14,6 +14,19 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 
 **For Web3 Builders:** Pay for deployments with USDC or the $SVR utility token. Every transaction is transparent, with fees automatically split via a smart contract.
 
+## Current Status (Beta Phase 1 - Live Demo)
+
+SoverGrid is currently in **Beta Phase 1**, designed specifically as a working proof-of-concept for investors and early developers. 
+
+**What is currently working 100% (The Financial Plumbing):**
+- **Web3 Payment Routing:** When a developer runs `sovergrid deploy`, the CLI securely connects to the blockchain, signs a transaction with their private key, and charges them testnet USDC.
+- **Smart Contract Revenue Split:** The 80/20 revenue split (where 20% goes to the SoverGrid Treasury and 80% to the compute provider) is executed flawlessly on-chain.
+- **Orchestration Logic:** The CLI properly parses the `sovergrid.yaml` file, calculates costs, simulates latency, and checks for budget limits.
+
+**What is mocked (Pending Phase 4 Funding):**
+- **Decentralized Network Integration:** In this beta phase, the actual connection to Akash, Spheron, and Golem is mocked. The backend pretends to deploy the code and returns a simulated DNS link. 
+- **Next Steps:** With seed funding, Phase 4 will replace these mock endpoints with the real APIs for Akash, Filecoin, and Bittensor, turning the working financial engine into a fully operational decentralized cloud.
+
 ## Quick Start
 
 ### 1. Installation
@@ -43,7 +56,15 @@ sovergrid register
 sovergrid login
 ```
 
-### 3. Deploy Your App
+### 3. Get Testnet Funds (Beta Only)
+
+Since the CLI requires testnet USDC to deploy, you can instantly fund your wallet using the built-in faucet:
+
+```bash
+sovergrid faucet
+```
+
+### 4. Deploy Your App
 
 ```bash
 # Initialize your project
@@ -63,6 +84,7 @@ sovergrid deploy
 | `sovergrid register` | Create a new SoverGrid developer account |
 | `sovergrid login` | Authenticate your CLI |
 | `sovergrid logout` | Log out of the CLI |
+| `sovergrid faucet` | Mint $1,000 in free testnet USDC to test the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
 | `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
 | `sovergrid status` | Check the status of your active deployment |

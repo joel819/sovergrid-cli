@@ -139,6 +139,14 @@ async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreak
         return None
         
     log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for {cost.total:.4f} USDC...{Colors.RESET}")
+    
+    # Check balance before attempting to pay
+    balance = blockchain.get_token_balance()
+    if balance is not None and balance < cost.total:
+        log.error(f"{Colors.RED}Insufficient USDC balance ({balance:.4f} USDC).{Colors.RESET}")
+        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get $1,000 in free testnet USDC.{Colors.RESET}")
+        return None
+
     provider_wallet = "0x" + "1" * 40  # Dummy provider wallet
     tx_hash = blockchain.pay_for_deployment(cost.total, provider_wallet)
     
@@ -229,6 +237,121 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
         return None
 
 
+async def deploy_database(config: SoverGridConfig, provider: str) -> dict:
+    if not provider:
+        return None
+    from sovergrid.services.blockchain import BlockchainService
+    log.info(f"Deploying database to {provider.title()} Network via SoverGrid Backend...")
+    
+    auth_headers = _load_auth_headers()
+    blockchain = BlockchainService()
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Database deployment failed. Cannot connect to blockchain.{Colors.RESET}")
+        return None
+        
+    db_cost = 2.50 if provider == "kwil" else 1.80
+    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for Database ({db_cost:.4f} USDC)...{Colors.RESET}")
+    
+    # Check balance before attempting to pay
+    balance = blockchain.get_token_balance()
+    if balance is not None and balance < db_cost:
+        log.error(f"{Colors.RED}Insufficient USDC balance for Database ({balance:.4f} USDC).{Colors.RESET}")
+        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get free testnet USDC.{Colors.RESET}")
+        return None
+
+    provider_wallet = "0x" + "2" * 40
+    tx_hash = blockchain.pay_for_deployment(db_cost, provider_wallet)
+    
+    if not tx_hash:
+        return None
+        
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "app_name": config.app_name,
+                "provider": provider.lower(),
+                "service_type": "database",
+                "config": {"db_name": config.database_name},
+                "transaction_hash": tx_hash
+            }
+            api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
+            response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
+            response.raise_for_status()
+            data = response.json()
+            
+            result_data = data.get("data", {})
+            log.info(f"{Colors.GREEN}{provider.title()} database deployment successful.{Colors.RESET}")
+            
+            return {
+                "provider": provider,
+                "status": "active",
+                "endpoint": result_data.get("url", f"https://db.{provider}.network/{config.database_name}")
+            }
+    except Exception as e:
+        log.error(f"Backend database deployment failed: {str(e)}")
+        return None
+
+
+async def deploy_frontend(config: SoverGridConfig) -> dict:
+    if not config.frontend_provider:
+        return None
+    from sovergrid.services.blockchain import BlockchainService
+    log.info(f"Deploying frontend to {config.frontend_provider.title()} Network via SoverGrid Backend...")
+    
+    auth_headers = _load_auth_headers()
+    blockchain = BlockchainService()
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Frontend deployment failed. Cannot connect to blockchain.{Colors.RESET}")
+        return None
+        
+    fe_cost = 1.00
+    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for Frontend ({fe_cost:.4f} USDC)...{Colors.RESET}")
+    
+    # Check balance before attempting to pay
+    balance = blockchain.get_token_balance()
+    if balance is not None and balance < fe_cost:
+        log.error(f"{Colors.RED}Insufficient USDC balance for Frontend ({balance:.4f} USDC).{Colors.RESET}")
+        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get free testnet USDC.{Colors.RESET}")
+        return None
+
+    provider_wallet = "0x" + "3" * 40
+    tx_hash = blockchain.pay_for_deployment(fe_cost, provider_wallet)
+    
+    if not tx_hash:
+        return None
+        
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "app_name": config.app_name,
+                "provider": config.frontend_provider.lower(),
+                "service_type": "frontend",
+                "config": {},
+                "transaction_hash": tx_hash
+            }
+            api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
+            response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
+            response.raise_for_status()
+            data = response.json()
+            
+            result_data = data.get("data", {})
+            details = result_data.get("details", {})
+            
+            # Prefer the branded DNS URL, fallback to raw endpoint
+            endpoint = details.get("branded_url", details.get("endpoint", f"https://{config.app_name}.on.fleek.co"))
+            
+            log.info(f"{Colors.GREEN}{config.frontend_provider.title()} frontend deployment successful.{Colors.RESET}")
+            
+            return {
+                "provider": config.frontend_provider,
+                "status": "active",
+                "endpoint": endpoint
+            }
+    except Exception as e:
+        log.error(f"Backend frontend deployment failed: {str(e)}")
+        return None
+
+
 async def run_deployment(config: SoverGridConfig) -> dict:
     """
     Orchestrates a full mock deployment with Fallbacks & Cost Protection.
@@ -282,30 +405,56 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         active_provider = "spheron"
         cost = fallback_cost
 
-    # 3. Run compute and storage deployments concurrently
+    # 2b. Database Fallback Logic
+    db_provider = config.database_provider
+    if db_provider == "kwil" and random.random() < 0.2:
+        log.error("Kwil Network is currently unreachable.")
+        log.warning("Attempting automatic fallback to Polybase Network...")
+        db_provider = "polybase"
+        log.info(f"{Colors.GREEN}Database fallback approved. Polybase selected.{Colors.RESET}")
+
+    # 3. Run compute, storage, database, and frontend deployments concurrently
     compute_task = deploy_compute(config, provider=active_provider, cost=cost)
     storage_task = deploy_to_filecoin(config)
+    database_task = deploy_database(config, provider=db_provider)
+    frontend_task = deploy_frontend(config)
     
-    compute_result, filecoin_result = await asyncio.gather(compute_task, storage_task)
+    compute_result, filecoin_result, db_result, fe_result = await asyncio.gather(
+        compute_task, storage_task, database_task, frontend_task
+    )
 
     elapsed = round(time.time() - start_time, 2)
 
     if compute_result:
-        log.info(
+        output = (
             f"\n"
             f"  {Colors.BOLD}{Colors.GREEN}"
             f"  Deployment Complete{Colors.RESET}\n"
             f"  Time: {elapsed}s\n"
-            f"  Endpoint: {compute_result.get('endpoint', 'N/A')}\n"
-            f"{cost.display()}"
+            f"  Compute Endpoint: {compute_result.get('endpoint', 'N/A')}\n"
         )
+        if fe_result:
+            output += f"  Frontend URL: {Colors.CYAN}{Colors.UNDERLINE}{fe_result.get('endpoint')}{Colors.RESET}\n"
+        output += f"{cost.display()}"
+        log.info(output)
+        log.info("=" * 60)
+        log.info(f"{Colors.YELLOW}SoverGrid Beta Phase 1 Completed.{Colors.RESET}")
+        log.info("If you encountered any errors or have feedback, please report them directly to the founder:")
+        log.info(f"{Colors.CYAN}Email: info@sovergrid.network | Twitter: @SoverGrid{Colors.RESET}")
+        log.info("=" * 60)
     else:
         log.error(f"\n{Colors.BOLD}{Colors.RED}Deployment failed. Please check the errors above.{Colors.RESET}")
+        log.info("=" * 60)
+        log.info("If you encountered any errors or bugs during testing, please report them to the founder:")
+        log.info(f"{Colors.CYAN}Email: info@sovergrid.network | Twitter: @SoverGrid{Colors.RESET}")
+        log.info("=" * 60)
 
     return {
         "app_name": config.app_name,
         "compute": compute_result,
         "storage": filecoin_result,
+        "database": db_result,
+        "frontend": fe_result,
         "cost": {
             "base": cost.base_cost,
             "total": cost.total,
