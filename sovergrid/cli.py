@@ -423,6 +423,12 @@ def _load_service_config(service_key: str, config_path: str = None) -> tuple:
 
 # ─── Standalone Service Commands ─────────────────────────────────
 
+def _print_beta_notice(service_name: str):
+    log.info(f"\n{Colors.YELLOW}{Colors.BOLD}[BETA NOTICE]{Colors.RESET}")
+    log.info(f"{Colors.YELLOW}The SoverGrid {service_name} network is currently in Phase 1 (Testnet).{Colors.RESET}")
+    log.info(f"{Colors.YELLOW}This execution will simulate the routing and Web3 payment flow.{Colors.RESET}")
+    log.info(f"{Colors.YELLOW}Live hardware provisioning will be fully unlocked in the V1 release.{Colors.RESET}\n")
+
 @cli.command()
 @click.option(
     "--config", "-c", default=None,
@@ -432,6 +438,7 @@ def train(config):
     """Train an AI model on decentralized GPUs (standalone)."""
     log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
     log.info("Starting ML Training service...\n")
+    _print_beta_notice("GPU / ML Training")
 
     service_config, max_budget = _load_service_config("ml", config)
     if service_config is None:
@@ -462,6 +469,7 @@ def store(config):
     """Pin files to decentralized storage (standalone)."""
     log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
     log.info("Starting Storage service...\n")
+    _print_beta_notice("Decentralized Storage")
 
     service_config, max_budget = _load_service_config("storage", config)
     if service_config is None:
@@ -489,6 +497,7 @@ def db(config):
     """Provision a decentralized database (standalone)."""
     log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
     log.info("Starting Database service...\n")
+    _print_beta_notice("Decentralized Database")
 
     service_config, max_budget = _load_service_config("database", config)
     if service_config is None:
@@ -519,6 +528,7 @@ def cdn(config):
     """Push content to a decentralized CDN (standalone)."""
     log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
     log.info("Starting CDN service...\n")
+    _print_beta_notice("Decentralized CDN")
 
     service_config, max_budget = _load_service_config("cdn", config)
     if service_config is None:
