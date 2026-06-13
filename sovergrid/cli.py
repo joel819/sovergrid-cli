@@ -25,6 +25,7 @@ from sovergrid.services.storage import StorageService
 from sovergrid.services.ml_training import MLTrainingService
 from sovergrid.services.database import DatabaseService
 from sovergrid.services.cdn import CDNService
+from sovergrid.services.blockchain import BlockchainService
 
 log = get_logger(__name__)
 
@@ -301,6 +302,39 @@ def logout():
         log.info(f"{Colors.GREEN}Logged out. Credentials removed.{Colors.RESET}")
     else:
         log.info("No credentials found. Already logged out.")
+
+
+@cli.command()
+@click.argument("address", required=False)
+def balance(address: str = None):
+    """
+    Check the $SVR token balance for a specific wallet address.
+    If no address is provided, defaults to the private key in .env.
+    """
+    log.info(f"{Colors.BLUE}Connecting to Sepolia blockchain...{Colors.RESET}")
+    
+    # Initialize the Blockchain service
+    blockchain = BlockchainService()
+    
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Failed to connect to the Ethereum network. Check your internet or RPC.{Colors.RESET}")
+        return
+        
+    target_wallet = address or blockchain.wallet_address
+    if not target_wallet:
+        log.error(f"{Colors.RED}No wallet address provided and no PRIVATE_KEY found in .env.{Colors.RESET}")
+        return
+        
+    log.info(f"Querying $SVR balance for wallet: {target_wallet}")
+    
+    balance = blockchain.get_token_balance(target_wallet)
+    
+    if balance is not None:
+        log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
+        log.info(f"{Colors.GREEN}💰 BALANCE: {balance:,.2f} $SVR{Colors.RESET}")
+        log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
+    else:
+        log.error("Could not retrieve token balance. Have you set CONTRACT_ADDRESS in .env?")
 
 
 # ─── Helper: Load a single service section from sovergrid.yaml ───

@@ -8,7 +8,6 @@ STANDALONE USAGE:
 PROVIDERS:
     - Akash Network (primary)
     - Spheron Network (fallback)
-    - Golem Network (future)
 
 LEARNING NOTE FOR JOEL:
 -----------------------
@@ -31,11 +30,11 @@ log = get_logger(__name__)
 COMPUTE_PROVIDERS = {
     "akash": {"min_price": 0.30, "max_price": 0.80, "failure_rate": 0.2, "green_certified": False},
     "spheron": {"min_price": 0.40, "max_price": 0.90, "failure_rate": 0.05, "green_certified": True},
-    "golem": {"min_price": 0.25, "max_price": 0.70, "failure_rate": 0.1, "green_certified": True},
+    "flux": {"min_price": 0.20, "max_price": 0.65, "failure_rate": 0.15, "green_certified": True},
 }
 
-# Fallback chain: if provider #1 fails, try #2, then #3
-FALLBACK_CHAIN = ["akash", "spheron", "golem"]
+# Fallback chain: if provider #1 fails, try #2, then #3, then #4
+FALLBACK_CHAIN = ["akash", "spheron", "flux"]
 
 
 class ComputeService(BaseService):
