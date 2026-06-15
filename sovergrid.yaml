@@ -35,4 +35,4 @@ database:
   name: "sovergrid_db"
 
 frontend:
-  provider: "fleek"
+  provider: "4everland"

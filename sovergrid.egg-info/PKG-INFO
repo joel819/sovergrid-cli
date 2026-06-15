@@ -106,8 +106,8 @@ Each service works **completely independently**. You do not need to use all of t
 |---------|---------|-------------|
 | `sovergrid train` | ML Training | Train AI models on decentralized GPUs (Bittensor, Gensyn, io.net) |
 | `sovergrid store` | Storage | Pin files to decentralized storage (Filecoin, Arweave, IPFS) |
-| `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Polybase NoSQL) |
-| `sovergrid cdn` | CDN | Distribute content via decentralized CDN (Fleek, Saturn) |
+| `sovergrid db` | Database | Provision a decentralized database (Kwil SQL, Tableland on-chain SQL) |
+| `sovergrid cdn` | CDN | Distribute content via decentralized CDN (4EVERLAND, Saturn) |
 | `sovergrid secure` | Security | Integrate Web3 privacy, encryption, and KMS (Lit Protocol, Secret Network) |
 
 ## Green Compute
@@ -178,7 +178,7 @@ Developer's Laptop          SoverGrid CLI              Decentralized Networks
 |  Application    | --> |  Auto-Dockerizer | --> |  Filecoin  (Storage)   |
 |                 |     |  Service Router  |     |  Bittensor (ML/AI)     |
 |  sovergrid.yaml |     |                  |     |  Kwil      (Database)  |
-|                 |     |  Services:       |     |  Fleek     (CDN)       |
+|                 |     |  Services:       |     |  4EVERLAND (CDN)       |
 +-----------------+     |   compute.py     |     |                         |
                         |   storage.py     |     |  Smart Contract Vault   |
                         |   ml_training.py |     |  (60/20/15/5 split)    |

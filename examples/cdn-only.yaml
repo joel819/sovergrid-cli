@@ -10,7 +10,7 @@ app:
   name: "my-website-assets"
 
 cdn:
-  provider: "fleek"        # Options: fleek, saturn
+  provider: "4everland"    # Options: 4everland, saturn
   origin: "./dist"         # Path to your static files (HTML, CSS, JS, images)
   domain: "myapp.eth"      # Your .eth domain (optional, leave blank for auto URL)
 

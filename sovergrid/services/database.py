@@ -8,7 +8,7 @@ STANDALONE USAGE:
 
 PROVIDERS:
     - Kwil (decentralized SQL database)
-    - Polybase (decentralized NoSQL, like Firebase for Web3)
+    - Tableland (decentralized on-chain SQL database, tables are ERC721 NFTs)
 
 LEARNING NOTE FOR JOEL:
 -----------------------
@@ -36,10 +36,10 @@ DB_PROVIDERS = {
         "price_per_month": 2.50,
         "description": "Decentralized SQL database with ACID compliance",
     },
-    "polybase": {
-        "type": "NoSQL",
-        "price_per_month": 1.80,
-        "description": "Decentralized NoSQL (like Firebase for Web3)",
+    "tableland": {
+        "type": "SQL",
+        "price_per_month": 2.00,
+        "description": "Decentralized on-chain SQL database (tables are ERC721 NFTs)",
     },
 }
 
@@ -101,7 +101,7 @@ class DatabaseService(BaseService):
         """
         Provisions a decentralized database instance.
 
-        FUTURE: Replace with real Kwil SDK calls or Polybase API.
+        FUTURE: Replace with real Kwil SDK calls or Tableland smart contract interactions.
         """
         provider = self.provider
         provider_info = DB_PROVIDERS[provider]

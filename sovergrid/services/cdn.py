@@ -6,7 +6,7 @@ STANDALONE USAGE:
     sovergrid cdn <path>  (pushes files to a decentralized CDN)
 
 PROVIDERS:
-    - Fleek (decentralized web hosting and CDN)
+    - 4EVERLAND (decentralized web hosting to IPFS, Arweave, Greenfield)
     - Saturn (Filecoin's decentralized CDN layer)
 
 LEARNING NOTE FOR JOEL:
@@ -33,9 +33,9 @@ log = get_logger(__name__)
 
 # Supported CDN providers
 CDN_PROVIDERS = {
-    "fleek": {
+    "4everland": {
         "price_per_gb_transferred": 0.01,
-        "description": "Decentralized web hosting and edge delivery",
+        "description": "Decentralized web hosting to IPFS, Arweave, and Greenfield",
     },
     "saturn": {
         "price_per_gb_transferred": 0.008,
@@ -50,7 +50,7 @@ class CDNService(BaseService):
 
     Config expected (from sovergrid.yaml):
         cdn:
-          provider: "fleek"
+          provider: "4everland"
           origin: "./dist"
           domain: "myapp.eth"
     """
@@ -61,7 +61,7 @@ class CDNService(BaseService):
 
     @property
     def provider(self) -> str:
-        return self.config.get("provider", "fleek")
+        return self.config.get("provider", "4everland")
 
     @property
     def origin_path(self) -> str:
@@ -89,7 +89,7 @@ class CDNService(BaseService):
 
     def estimate_cost(self) -> float:
         """Estimates CDN cost based on simulated bandwidth."""
-        provider_info = CDN_PROVIDERS.get(self.provider, CDN_PROVIDERS["fleek"])
+        provider_info = CDN_PROVIDERS.get(self.provider, CDN_PROVIDERS["4everland"])
         # Simulate 1GB to 10GB of monthly transfer
         simulated_gb = round(random.uniform(1.0, 10.0), 2)
         return round(provider_info["price_per_gb_transferred"] * simulated_gb, 4)
@@ -98,7 +98,7 @@ class CDNService(BaseService):
         """
         Deploys static content to a decentralized CDN.
 
-        FUTURE: Replace with real Fleek CLI or Saturn API calls.
+        FUTURE: Replace with real 4EVERLAND Hosting API or Saturn API calls.
         """
         provider = self.provider
 

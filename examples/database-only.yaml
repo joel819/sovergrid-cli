@@ -9,7 +9,7 @@ app:
   name: "my-database"
 
 database:
-  provider: "kwil"         # Options: kwil (SQL), polybase (NoSQL)
+  provider: "kwil"         # Options: kwil (SQL), tableland (on-chain SQL)
   name: "users_db"         # Your database name
   schema: "./schema.sql"   # Path to your SQL schema file (optional)
 

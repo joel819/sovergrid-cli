@@ -29,14 +29,14 @@ Instead of traditional subscription fees, SoverGrid utilizes a Smart Contract Va
 ### 2.4 The Decentralized AWS Ecosystem
 SoverGrid extends beyond basic compute and storage. The Provider Plugin Architecture is designed to mirror the entire AWS product suite using decentralized alternatives. Competitors can permissionlessly integrate their services into SoverGrid. The ecosystem includes:
 *   **Decentralized Machine Learning (DeML):** Integrations with networks like Bittensor, Gensyn, and io.net allow AI developers to train massive models across decentralized GPU clusters instantly.
-*   **Decentralized Databases:** Integrations with Kwil and Polybase provide Web3-native SQL databases.
-*   **Decentralized CDNs:** Integrations with Saturn and Fleek provide global edge delivery.
+*   **Decentralized Databases:** Integrations with Kwil and Tableland provide Web3-native SQL databases.
+*   **Decentralized CDNs:** Integrations with Saturn and 4EVERLAND provide global edge delivery.
 
 ### 2.5 Decentralized Frontend Hosting & Local Preview
-SoverGrid provides a seamless "Vercel-like" experience for Web3. Developers build and test their Next.js or React applications locally (`localhost:3000`) exactly as they do in Web2, incurring zero costs. When ready, running `sovergrid deploy` automatically routes the frontend code to decentralized hosting networks like **Fleek** or **Spheron**. This replaces centralized domains with un-censorable IPFS hashes or `.eth` domains, fully decentralizing the user-facing website.
+SoverGrid provides a seamless "Vercel-like" experience for Web3. Developers build and test their Next.js or React applications locally (`localhost:3000`) exactly as they do in Web2, incurring zero costs. When ready, running `sovergrid deploy` automatically routes the frontend code to decentralized hosting networks like **4EVERLAND** or **Spheron**. This replaces centralized domains with un-censorable IPFS hashes or `.eth` domains, fully decentralizing the user-facing website.
 
 ### 2.6 The Self-Hosting Architecture (Dogfooding)
-To prove the resilience of the SoverGrid protocol, the entire ecosystem is hosted on the very decentralized infrastructure it provisions. The SoverGrid FastAPI backend operates directly on the Akash Network, the frontend dashboard is pinned to IPFS via Fleek, database operations run on Kwil, and domains resolve via ENS (`.eth`). This "dogfooding" approach ensures that SoverGrid's infrastructure is completely decentralized, uncensorable, and mathematically pays for its own existence without relying on traditional Web2 cloud monopolies.
+To prove the resilience of the SoverGrid protocol, the entire ecosystem is hosted on the very decentralized infrastructure it provisions. The SoverGrid FastAPI backend operates directly on the Akash Network, the frontend dashboard is pinned to IPFS via 4EVERLAND, database operations run on Kwil, and domains resolve via ENS (`.eth`). This "dogfooding" approach ensures that SoverGrid's infrastructure is completely decentralized, uncensorable, and mathematically pays for its own existence without relying on traditional Web2 cloud monopolies.
 
 ---
 

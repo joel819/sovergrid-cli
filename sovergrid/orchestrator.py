@@ -338,7 +338,7 @@ async def deploy_frontend(config: SoverGridConfig) -> dict:
             details = result_data.get("details", {})
             
             # Prefer the branded DNS URL, fallback to raw endpoint
-            endpoint = details.get("branded_url", details.get("endpoint", f"https://{config.app_name}.on.fleek.co"))
+            endpoint = details.get("branded_url", details.get("endpoint", f"https://{config.app_name}.4everland.app"))
             
             log.info(f"{Colors.GREEN}{config.frontend_provider.title()} frontend deployment successful.{Colors.RESET}")
             
@@ -409,9 +409,9 @@ async def run_deployment(config: SoverGridConfig) -> dict:
     db_provider = config.database_provider
     if db_provider == "kwil" and random.random() < 0.2:
         log.error("Kwil Network is currently unreachable.")
-        log.warning("Attempting automatic fallback to Polybase Network...")
-        db_provider = "polybase"
-        log.info(f"{Colors.GREEN}Database fallback approved. Polybase selected.{Colors.RESET}")
+        log.warning("Attempting automatic fallback to Tableland Network...")
+        db_provider = "tableland"
+        log.info(f"{Colors.GREEN}Database fallback approved. Tableland selected.{Colors.RESET}")
 
     # 3. Run compute, storage, database, and frontend deployments concurrently
     compute_task = deploy_compute(config, provider=active_provider, cost=cost)

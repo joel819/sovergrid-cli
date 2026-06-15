@@ -46,14 +46,14 @@ ml:
 # ─── DATABASE (sovergrid db) ─────────────────────────────────────
 # Provisions decentralized SQL or NoSQL databases.
 database:
-  provider: "kwil"         # Options: kwil, polybase
+  provider: "kwil"         # Options: kwil, tableland
   name: "my_app_db"        # Database name
   schema: "./schema.sql"   # Path to schema file (optional)
 
 # ─── CDN (sovergrid cdn) ─────────────────────────────────────────
 # Distributes static content via decentralized CDN.
 cdn:
-  provider: "fleek"        # Options: fleek, saturn
+  provider: "4everland"    # Options: 4everland, saturn
   origin: "./dist"         # Path to static files
   domain: "myapp.eth"      # Custom .eth domain (optional)
 

@@ -50,7 +50,7 @@ database:
 
 # ─── CDN ─────────────────────────────────────────────────────────
 cdn:
-  provider: "fleek"
+  provider: "4everland"
   origin: "./frontend/dist"
   domain: "myapp.eth"
 
