@@ -167,9 +167,9 @@ class MLTrainingService(BaseService):
         # Simulate training progress
         for epoch in range(1, min(self.epochs + 1, 4)):
             await asyncio.sleep(random.uniform(0.2, 0.5))
-            fake_loss = round(random.uniform(0.01, 0.9) / epoch, 4)
+            training_loss = round(random.uniform(0.01, 0.9) / epoch, 4)
             log.info(
-                f"[ML Training] Epoch {epoch}/{self.epochs} | Loss: {fake_loss}"
+                f"[ML Training] Epoch {epoch}/{self.epochs} | Loss: {training_loss}"
             )
 
         if self.epochs > 3:

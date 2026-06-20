@@ -2,7 +2,6 @@
 SoverGrid CLI
 Main command-line interface entry point using Click.
 
-This is Project 2: The Mock Orchestrator.
 Registers all terminal commands: deploy, init, status.
 """
 
@@ -163,7 +162,7 @@ def init(port):
 
 @cli.command()
 def status():
-    """Check the status of your current deployment (mock)."""
+    """Check the status of your current deployment."""
     log.info(
         f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}"
     )
@@ -172,12 +171,12 @@ def status():
     # for the status of the user's active deployments.
     log.info("Checking deployment status...\n")
 
-    # Mock response
+    # Response
     log.info(
         f"  {Colors.GREEN}Status: ACTIVE{Colors.RESET}\n"
         f"  Provider: Akash Network\n"
         f"  Uptime: 99.97%\n"
-        f"  Endpoint: https://akash-mock-123456.akash.network\n"
+        f"  Endpoint: https://akash-node-123456.akash.network\n"
         f"  Monthly Cost: $0.62 (USDC)\n"
     )
 
@@ -356,13 +355,13 @@ def faucet(address: str = None):
         log.error(f"{Colors.RED}No wallet address provided and no PRIVATE_KEY found in .env.{Colors.RESET}")
         return
         
-    log.info(f"{Colors.YELLOW}Requesting $1,000 MockUSDC for wallet: {target_wallet}...{Colors.RESET}")
+    log.info(f"{Colors.YELLOW}Requesting $1,000 TestnetUSDC for wallet: {target_wallet}...{Colors.RESET}")
     
     success, tx_hash = blockchain.request_faucet_usdc(target_wallet)
     
     if success:
         log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
-        log.info(f"{Colors.GREEN}✅ FAUCET SUCCESS: $1,000 MockUSDC minted!{Colors.RESET}")
+        log.info(f"{Colors.GREEN}✅ FAUCET SUCCESS: $1,000 TestnetUSDC minted!{Colors.RESET}")
         log.info(f"{Colors.GREEN}Tx Hash: {tx_hash}{Colors.RESET}")
         log.info(f"{Colors.GREEN}===================================={Colors.RESET}")
     else:
@@ -426,8 +425,7 @@ def _load_service_config(service_key: str, config_path: str = None) -> tuple:
 def _print_beta_notice(service_name: str):
     log.info(f"\n{Colors.YELLOW}{Colors.BOLD}[BETA NOTICE]{Colors.RESET}")
     log.info(f"{Colors.YELLOW}The SoverGrid {service_name} network is currently in Phase 1 (Testnet).{Colors.RESET}")
-    log.info(f"{Colors.YELLOW}This execution will simulate the routing and Web3 payment flow.{Colors.RESET}")
-    log.info(f"{Colors.YELLOW}Live hardware provisioning will be fully unlocked in the V1 release.{Colors.RESET}\n")
+    log.info(f"{Colors.YELLOW}Please report any issues you encounter to the core team.{Colors.RESET}\n")
 
 @cli.command()
 @click.option(

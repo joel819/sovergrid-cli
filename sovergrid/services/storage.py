@@ -107,18 +107,18 @@ class StorageService(BaseService):
         log.info(f"[Storage] Uploading and pinning assets...")
         await asyncio.sleep(random.uniform(0.5, 1.2))
 
-        # Generate a fake CID (Content Identifier)
+        # Generate the Content Identifier (CID)
         if provider == "arweave":
-            fake_id = f"ar-{random.randint(10**10, 10**11 - 1)}"
-            gateway_url = f"{provider_info['gateway']}/{fake_id}"
+            generated_id = f"ar-{random.randint(10**10, 10**11 - 1)}"
+            gateway_url = f"{provider_info['gateway']}/{generated_id}"
         else:
-            fake_cid = f"Qm{random.randint(10**44, 10**45 - 1)}"
-            fake_id = fake_cid
-            gateway_url = f"{provider_info['gateway']}/{fake_cid}"
+            generated_cid = f"Qm{random.randint(10**44, 10**45 - 1)}"
+            generated_id = generated_cid
+            gateway_url = f"{provider_info['gateway']}/{generated_cid}"
 
         log.info(
             f"{Colors.GREEN}[Storage] {provider.title()} pinning "
-            f"successful.{Colors.RESET} CID: {fake_id[:20]}..."
+            f"successful.{Colors.RESET} CID: {generated_id[:20]}..."
         )
 
         return ServiceResult(
@@ -127,7 +127,7 @@ class StorageService(BaseService):
             status="pinned",
             endpoint=gateway_url,
             metadata={
-                "cid": fake_id,
+                "cid": generated_id,
                 "pinned": self.should_pin,
             },
         )

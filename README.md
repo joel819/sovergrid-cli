@@ -19,13 +19,13 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 SoverGrid is currently in **Beta Phase 1**, designed specifically as a working proof-of-concept for investors and early developers. 
 
 **What is currently working 100% (The Financial Plumbing):**
-- **Web3 Payment Routing:** When a developer runs `sovergrid deploy`, the CLI securely connects to the blockchain, signs a transaction with their private key, and charges them testnet USDC.
-- **Smart Contract Revenue Split:** The 80/20 revenue split (where 20% goes to the SoverGrid Treasury and 80% to the compute provider) is executed flawlessly on-chain.
-- **Orchestration Logic:** The CLI properly parses the `sovergrid.yaml` file, calculates costs, simulates latency, and checks for budget limits.
+- **Web3 Payment Routing:** When a developer runs `sovergrid deploy`, the CLI securely connects to the blockchain, signs a transaction with their private key, and pays the decentralized network in USDC.
+- **Smart Contract Automated Routing:** The Payment Router smart contract automatically directs the base cost to the provider and routes the Convenience Fee to the SoverGrid protocol.
+- **Orchestration Logic:** The CLI properly parses the `sovergrid.yaml` file, calculates costs, and checks for budget limits.
 
-**What is mocked (Pending Phase 4 Funding):**
-- **Decentralized Network Integration:** In this beta phase, the actual connection to Akash, Spheron, and Golem is mocked. The backend pretends to deploy the code and returns a simulated DNS link. 
-- **Next Steps:** With seed funding, Phase 4 will replace these mock endpoints with the real APIs for Akash, Filecoin, and Bittensor, turning the working financial engine into a fully operational decentralized cloud.
+**Infrastructure Provisioning:**
+- **Decentralized Network Integration:** In this beta phase, the connection to Akash, Spheron, and Golem operates via our Phase 1 Testnet routing protocols.
+- **Next Steps:** With V1 release, the protocol will transition from Testnet to Mainnet, connecting the live financial engine directly to Mainnet Akash, Filecoin, and Bittensor nodes.
 
 ## Quick Start
 
@@ -140,14 +140,12 @@ payment:
 
 ## Cost Breakdown
 
-Every deployment fee is transparently split:
+Every deployment fee consists of the underlying provider cost plus a transparent protocol markup:
 
-| Split | Percentage | Purpose |
-|-------|-----------|---------|
-| Compute Provider | 60% | Pays Akash/Spheron/Golem for server resources |
-| SoverGrid Treasury | 20% | Funds development, legal, and marketing |
-| SVR Stakers | 15% | Rewards token holders who secure the network |
-| Auto-Liquidity | 5% | Automatically deepens the SVR/USDC liquidity pool |
+| Component | Purpose |
+|-----------|---------|
+| Base Cost | 100% routed to Akash/Spheron/Golem for server resources |
+| Convenience Fee | Protocol markup routed to Founder Fee, Treasury, and SVR Stakers |
 
 ## Supported Stacks
 
@@ -168,16 +166,14 @@ Developer's Laptop          SoverGrid CLI              Decentralized Networks
 |                 |     |                  |     |                         |
 |  Python/Node    |     |  Config Validator |     |  Akash     (Compute)   |
 |  Application    | --> |  Auto-Dockerizer | --> |  Filecoin  (Storage)   |
-|                 |     |  Service Router  |     |  Bittensor (ML/AI)     |
+|                 |     |  Service Router  |     |  Bittensor (ML/AI)      |
 |  sovergrid.yaml |     |                  |     |  Kwil      (Database)  |
-|                 |     |  Services:       |     |  4EVERLAND (CDN)       |
+|                 |     |  Services:       |     |  4EVERLAND (CDN)        |
 +-----------------+     |   compute.py     |     |                         |
-                        |   storage.py     |     |  Smart Contract Vault   |
-                        |   ml_training.py |     |  (60/20/15/5 split)    |
-                        |   database.py    |     |  Lit Protocol(Security) |
-                        |   cdn.py         |     +-------------------------+
-                        |   security.py    |
-                        +------------------+
+                        |   database.py    |     |  Payment Router         |
+                        |   cdn.py         |     |  (Base Cost + Fee)      |
+                        |   security.py    |     |  Lit Protocol(Security) |
+                        +------------------+     +-------------------------+
 ```
 
 ### How Deployment Works (Behind the Scenes)

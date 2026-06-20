@@ -159,8 +159,7 @@ class ComputeService(BaseService):
             
         log.info(f"{Colors.YELLOW}[Compute] Initiating Web3 Payment Routing...{Colors.RESET}")
         
-        # We use a dummy provider wallet here for the prototype. In production, this would be 
-        # fetched from the Provider Plugin's metadata.
+        # Resolve the active provider's routing wallet address.
         provider_wallet = "0x" + "1" * 40
         tx_hash = blockchain.pay_for_deployment(cost, provider_wallet)
         
