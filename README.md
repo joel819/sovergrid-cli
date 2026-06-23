@@ -12,7 +12,7 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 
 **For Web2 Developers:** You don't need to learn blockchain. Write your normal Python or Node.js app, and SoverGrid handles the rest. It auto-generates Dockerfiles, calculates costs, and deploys to the cheapest available decentralized network.
 
-**For Web3 Builders:** Pay for deployments with USDC or the $SVR utility token. Every transaction is transparent, with fees automatically split via a smart contract.
+**For Web3 Builders:** Deployments cost a flat $5 fee in USDC. Every transaction is transparent and payment is instantly verified on-chain.
 
 ## Current Status (Beta Phase 1 - Live Demo)
 
@@ -71,6 +71,9 @@ sovergrid faucet
 cd my-web-app
 sovergrid init
 
+# Test your deployment locally for free via Docker
+sovergrid dev
+
 # Deploy to the decentralized cloud
 sovergrid deploy
 ```
@@ -86,6 +89,7 @@ sovergrid deploy
 | `sovergrid logout` | Log out of the CLI |
 | `sovergrid faucet` | Mint $1,000 in free testnet USDC to test the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
+| `sovergrid dev` | Test your deployment locally via Docker for free |
 | `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
@@ -140,12 +144,11 @@ payment:
 
 ## Cost Breakdown
 
-Every deployment fee consists of the underlying provider cost plus a transparent protocol markup:
+SoverGrid simplifies pricing with a unified, predictable model.
 
-| Component | Purpose |
-|-----------|---------|
-| Base Cost | 100% routed to Akash/Spheron/Golem for server resources |
-| Convenience Fee | Protocol markup routed to Founder Fee, Treasury, and SVR Stakers |
+| Component | Cost | Purpose |
+|-----------|------|---------|
+| Flat Deployment Fee | **$5.00 USDC** | Complete deployment onto the decentralized network. No hidden markup, no percentage fees. |
 
 ## Supported Stacks
 
