@@ -110,8 +110,8 @@ Specifically:
 
 Specifically:
 - USDC payment router: Routes 100% of the base compute cost directly to the Akash provider's wallet.
-- Convenience Fee Engine: Charges a flat percentage markup (in USDC) to the developer for the SoverGrid abstraction layer.
-- ERC-20 $SVR token contract: Optional utility token. Developers who pay in $SVR receive a discount on the convenience fee.
+- Convenience Fee Engine: Charges a flat SaaS-style routing fee (e.g., $5.00 USDC) per deployment to the developer for the SoverGrid abstraction layer.
+- No massive percentage markups on expensive compute clusters. The fee is flat, predictable, and fair.
 - Connect Python CLI to contracts via web3.py
 - `sovergrid login` command that connects MetaMask wallet without touching private keys
 
@@ -189,10 +189,9 @@ sovergrid deploy myapp.yaml
 
 ✓ App live at: https://myapp.sovergrid.network
 ✓ Deployed on: Akash Network (EU-West)
-✓ Provider Cost: $0.018 USDC/hour (100% routed to Akash Provider)
-✓ SoverGrid Convenience Fee: $0.002 USDC/hour
-✓ Discount Applied: 50% fee reduction for holding $SVR
-✓ Total Charged: $0.019 USDC/hour
+✓ Base Compute Cost: $10.50 USDC / month (100% routed to Akash Provider)
+✓ SoverGrid Routing Fee: $5.00 USDC (One-time flat SaaS fee)
+✓ Total Billed Today: $15.50 USDC
 ```
 
 Any developer. Any app. One command. Running on Akash.
