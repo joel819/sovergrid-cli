@@ -23,6 +23,7 @@ from sovergrid.services.compute import ComputeService
 from sovergrid.services.storage import StorageService
 from sovergrid.services.ml_training import MLTrainingService
 from sovergrid.services.database import DatabaseService
+from sovergrid.dev_runner import run_local_dev
 from sovergrid.services.cdn import CDNService
 from sovergrid.services.blockchain import BlockchainService
 
@@ -155,9 +156,20 @@ def init(port):
         f"  Project initialized successfully.{Colors.RESET}\n\n"
         f"  Next steps:\n"
         f"  1. Review your {CONFIG_FILENAME}\n"
-        f"  2. Run {Colors.CYAN}sovergrid deploy{Colors.RESET} "
+        f"  2. Run {Colors.CYAN}sovergrid dev{Colors.RESET} to test locally\n"
+        f"  3. Run {Colors.CYAN}sovergrid deploy{Colors.RESET} "
         f"to deploy\n"
     )
+
+
+@cli.command()
+@click.option(
+    "--port", "-p", default=3000,
+    help="Port to run the local preview on.",
+)
+def dev(port):
+    """Run your app locally in a Docker container to test before deploying."""
+    run_local_dev(port=port)
 
 
 @cli.command()
