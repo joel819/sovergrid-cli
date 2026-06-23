@@ -48,16 +48,12 @@ def _load_auth_headers() -> dict:
 class CostBreakdown:
     """
     Represents the fee split for a single deployment.
-    Maps directly to the tokenomics in SoverGrid_Payment_Routing.md:
-      60% -> Compute Provider (Akash/Spheron)
+    Maps directly to the updated 80/20 tokenomics:
+      80% -> Compute Provider (Akash/Spheron)
       20% -> SoverGrid Treasury
-      15% -> SVR Stakers
-       5% -> Auto-Liquidity Pool
     """
     base_cost: float          # What the compute provider charges
-    treasury_fee: float       # 20% to SoverGrid Foundation
-    staker_reward: float      # 15% to SVR token stakers
-    liquidity_fee: float      # 5% auto-routed to Uniswap pool
+    treasury_fee: float       # 20% to SoverGrid Treasury
     total: float              # What the developer actually pays
 
     def display(self) -> str:
@@ -68,8 +64,6 @@ class CostBreakdown:
             f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
             f"  Compute ({self.provider}):    ${self.base_cost:.4f}\n"
             f"  Treasury (20%):        ${self.treasury_fee:.4f}\n"
-            f"  Staker Rewards (15%):  ${self.staker_reward:.4f}\n"
-            f"  Auto-Liquidity (5%):   ${self.liquidity_fee:.4f}\n"
             f"  {Colors.DIM}{'-' * 40}{Colors.RESET}\n"
             f"  {Colors.BOLD}{Colors.GREEN}Total:                  "
             f"${self.total:.4f}{Colors.RESET}\n"
@@ -82,21 +76,14 @@ def calculate_cost(base_cost: float, provider: str = "akash") -> CostBreakdown:
     """
     Calculates the full fee split from a base compute cost.
     The base cost is what the decentralized network charges.
-    SoverGrid adds its fees on top.
-
-    In the real implementation, base_cost will come from pinging
-    the Akash/Spheron marketplace API for live pricing.
+    We tack on the protocol fees (Treasury).
+    So if base cost is $10.00 (which is 80% of total):
+    Total = $10.00 / 0.80 = $12.50
     """
-    treasury_fee = base_cost * 0.20
-    staker_reward = base_cost * 0.15
-    liquidity_fee = base_cost * 0.05
-    total = base_cost + treasury_fee + staker_reward + liquidity_fee
-
+    total = base_cost / 0.80
     return CostBreakdown(
         base_cost=base_cost,
-        treasury_fee=treasury_fee,
-        staker_reward=staker_reward,
-        liquidity_fee=liquidity_fee,
+        treasury_fee=total * 0.20,
         total=total,
         provider=provider,
     )
