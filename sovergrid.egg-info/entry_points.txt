@@ -1,2 +1,3 @@
 [console_scripts]
 sovergrid = sovergrid.cli:main
+sovergrid-mcp = sovergrid.mcp_server:main

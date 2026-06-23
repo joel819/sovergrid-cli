@@ -5,6 +5,7 @@ sovergrid/cli.py
 sovergrid/config.py
 sovergrid/dockerizer.py
 sovergrid/logger.py
+sovergrid/mcp_server.py
 sovergrid/orchestrator.py
 sovergrid.egg-info/PKG-INFO
 sovergrid.egg-info/SOURCES.txt
