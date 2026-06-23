@@ -48,12 +48,10 @@ def _load_auth_headers() -> dict:
 class CostBreakdown:
     """
     Represents the fee split for a single deployment.
-    Maps directly to the updated 80/20 tokenomics:
-      80% -> Compute Provider (Akash/Spheron)
-      20% -> SoverGrid Treasury
+    Uses a SaaS-style flat routing fee per deployment.
     """
     base_cost: float          # What the compute provider charges
-    treasury_fee: float       # 20% to SoverGrid Treasury
+    routing_fee: float        # Flat SaaS fee (e.g., $5.00) for SoverGrid
     total: float              # What the developer actually pays
 
     def display(self) -> str:
@@ -63,7 +61,7 @@ class CostBreakdown:
             f"  {Colors.BOLD}Cost Breakdown{Colors.RESET}\n"
             f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
             f"  Compute ({self.provider}):    ${self.base_cost:.4f}\n"
-            f"  Treasury (20%):        ${self.treasury_fee:.4f}\n"
+            f"  SoverGrid Fee:         ${self.routing_fee:.4f}\n"
             f"  {Colors.DIM}{'-' * 40}{Colors.RESET}\n"
             f"  {Colors.BOLD}{Colors.GREEN}Total:                  "
             f"${self.total:.4f}{Colors.RESET}\n"
@@ -76,14 +74,14 @@ def calculate_cost(base_cost: float, provider: str = "akash") -> CostBreakdown:
     """
     Calculates the full fee split from a base compute cost.
     The base cost is what the decentralized network charges.
-    We tack on the protocol fees (Treasury).
-    So if base cost is $10.00 (which is 80% of total):
-    Total = $10.00 / 0.80 = $12.50
+    We tack on a flat SaaS routing fee ($5.00) per deployment.
     """
-    total = base_cost / 0.80
+    routing_fee = 5.00
+    total = base_cost + routing_fee
+    
     return CostBreakdown(
         base_cost=base_cost,
-        treasury_fee=total * 0.20,
+        routing_fee=routing_fee,
         total=total,
         provider=provider,
     )
