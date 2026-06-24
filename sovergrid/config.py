@@ -78,6 +78,16 @@ class SoverGridConfig:
         self.max_budget: float = self._get("payment.max_budget", 5.00)
         self.green: bool = self._get("green", False)
 
+        # User-defined environment variables to inject into the container
+        self.env_vars: dict = self._get("env", {}) or {}
+
+        # Token launch config (optional)
+        self.token_name: str = self._get("token.name", None)
+        self.token_symbol: str = self._get("token.symbol", None)
+        self.token_supply: int = self._get("token.supply", None)
+        self.token_network: str = self._get("token.network", "sepolia")
+        self.token_contract_address: str = self._get("token.contract_address", None)
+
     def _get(self, dotpath: str, default: Any = None) -> Any:
         """
         Safely retrieves a nested value from the config dictionary
@@ -190,6 +200,11 @@ class SoverGridConfig:
 
     def summary(self) -> str:
         """Returns a human-readable summary of the deployment config."""
+        env_count = len(self.env_vars)
+        token_info = (
+            f"{self.token_name} ({self.token_symbol})"
+            if self.token_name else "None"
+        )
         return (
             f"\n"
             f"  App:      {self.app_name}\n"
@@ -201,4 +216,6 @@ class SoverGridConfig:
             f"  Frontend: {self.frontend_provider or 'None'}\n"
             f"  Port:     {self.port}\n"
             f"  Budget:   ${self.max_budget:.2f}/mo ({self.payment_token})\n"
+            f"  Env Vars: {env_count} variable(s) configured\n"
+            f"  Token:    {token_info}\n"
         )

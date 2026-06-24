@@ -26,6 +26,7 @@ from sovergrid.services.database import DatabaseService
 from sovergrid.dev_runner import run_local_dev
 from sovergrid.services.cdn import CDNService
 from sovergrid.services.blockchain import BlockchainService
+from sovergrid.services.token import TokenService
 
 log = get_logger(__name__)
 
@@ -67,6 +68,22 @@ build:
 payment:
   token: "USDC"
   max_budget: 5.00
+
+# Environment Variables
+# These are injected into your container at runtime.
+# Store sensitive values as secrets — never commit real keys here.
+# env:
+#   DATABASE_URL: "postgresql://user:pass@host/db"
+#   STRIPE_SECRET_KEY: "sk_live_xxxx"
+#   NODE_ENV: "production"
+
+# Token Launch (optional)
+# Uncomment to deploy your own ERC-20 token alongside your app.
+# token:
+#   name: "My Project Token"
+#   symbol: "MPT"
+#   supply: 1000000
+#   network: "sepolia"  # or 'mainnet' when ready
 """
 
 
@@ -554,6 +571,54 @@ def cdn(config):
             f"  Edge Nodes:  {result.metadata.get('edge_nodes', 'N/A')}\n"
             f"  Cost:        ${result.cost_usd:.4f}\n"
             f"  URL:         {Colors.CYAN}{result.endpoint}{Colors.RESET}\n"
+        )
+
+
+@cli.command()
+@click.option("--name", prompt="Token Name", help="Full name of your token (e.g. My Project Token).")
+@click.option("--symbol", prompt="Token Symbol", help="Ticker symbol (e.g. MPT). Max 8 characters.")
+@click.option("--supply", prompt="Total Supply", type=int, help="Total token supply (e.g. 1000000).")
+@click.option("--network", default="sepolia", help="Blockchain network: 'sepolia' (testnet) or 'mainnet'.")
+def token(name, symbol, supply, network):
+    """
+    Deploy your own ERC-20 token to the blockchain.
+
+    This command compiles and deploys a standard ERC-20 smart contract
+    with your custom name, symbol, and supply. The token is minted
+    directly to your wallet address.
+
+    Example:
+        sovergrid token --name "My Token" --symbol MTK --supply 1000000
+    """
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Launching token: {Colors.CYAN}{name} ({symbol}){Colors.RESET}\n")
+    _print_beta_notice("Token Launch")
+
+    service = TokenService(
+        token_name=name,
+        token_symbol=symbol,
+        token_supply=supply,
+        network=network,
+    )
+    result = asyncio.run(service.deploy())
+
+    if result and result.get("status") == "success":
+        log.info(
+            f"\n  {Colors.BOLD}{Colors.GREEN}Token Deployed Successfully!{Colors.RESET}\n"
+            f"  Name:       {name}\n"
+            f"  Symbol:     {symbol}\n"
+            f"  Supply:     {supply:,}\n"
+            f"  Network:    {network}\n"
+            f"  Contract:   {Colors.CYAN}{result.get('contract_address', 'N/A')}{Colors.RESET}\n"
+            f"  Tx Hash:    {result.get('tx_hash', 'N/A')}\n\n"
+            f"  {Colors.YELLOW}Next step:{Colors.RESET} Add your contract address to "
+            f"sovergrid.yaml under 'token.contract_address' and run "
+            f"'sovergrid deploy' to connect it to your live website.\n"
+        )
+    else:
+        log.error(
+            f"Token deployment failed: {result.get('error', 'Unknown error')}\n"
+            f"Make sure your wallet has ETH for gas and your PRIVATE_KEY is set."
         )
 
 

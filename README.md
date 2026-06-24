@@ -91,6 +91,7 @@ sovergrid deploy
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
 | `sovergrid dev` | Test your deployment locally via Docker for free |
 | `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
+| `sovergrid token` | Deploy your own ERC-20 token to the blockchain |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
 
