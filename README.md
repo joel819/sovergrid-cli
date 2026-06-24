@@ -146,6 +146,60 @@ Each service works **completely independently**. You do not need to use all of t
 | `sovergrid cdn` | CDN | Distribute content via decentralized CDN (4EVERLAND, Saturn) |
 | `sovergrid secure` | Security | Integrate Web3 privacy, encryption, and KMS (Lit Protocol, Secret Network) |
 
+
+## Smart Dependency Scanner
+
+SoverGrid automatically scans your project for third-party SDKs and tells you exactly which environment variables are missing **before you pay a single cent**.
+
+The scanner runs at two points:
+
+**On `sovergrid init`** — immediately after your project is scaffolded, so you know what to configure before you even think about deploying.
+
+**On `sovergrid deploy`** — as a pre-flight check before any blockchain payment is submitted. If required variables are missing, you are warned and given the option to cancel and fix them first.
+
+### What It Detects
+
+| Category | Services |
+|----------|----------|
+| **Payment** | Stripe, PayPal, Flutterwave, Paystack, Square, Braintree, Razorpay, Lemon Squeezy, Circle, Paddle |
+| **Database** | PostgreSQL (psycopg2, asyncpg, SQLAlchemy), MongoDB, Redis, Prisma |
+| **Email** | SendGrid, Resend, Mailgun, Postmark, AWS SES |
+| **Auth** | Auth0, Clerk, Firebase, Supabase |
+| **AI / LLM** | OpenAI, Anthropic (Claude), Google Gemini, Replicate, Pinecone |
+| **Cloud** | AWS (boto3) |
+| **Communication** | Twilio, Pusher, Slack |
+
+### Example Output
+
+When you run `sovergrid init` or `sovergrid deploy` in a project that uses Stripe and PostgreSQL:
+
+```
+  Dependency Scan Results
+  ─────────────────────────────────────────
+  💳 Stripe  (payment)
+  🗄️  PostgreSQL / SQLAlchemy  (database)
+
+  Missing Environment Variables Detected:
+  These are required for your detected SDKs to work.
+  Set them now with: sovergrid env set KEY=value
+
+  Stripe:
+    STRIPE_SECRET_KEY      — Secret API key (sk_live_...)
+    STRIPE_PUBLISHABLE_KEY — Publishable key (pk_live_...)
+
+  PostgreSQL:
+    DATABASE_URL           — postgresql://user:pass@host:5432/db
+```
+
+You can then set them instantly without redeploying:
+
+```bash
+sovergrid env set STRIPE_SECRET_KEY=sk_live_xxx STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+sovergrid env set DATABASE_URL=postgresql://user:pass@host:5432/mydb
+```
+
+The scanner reads `requirements.txt`, `package.json`, `Pipfile`, and `pyproject.toml`. No code is sent to any server during the scan — it runs entirely on your machine.
+
 ## Green Compute
 
 SoverGrid supports eco-friendly deployments. By adding `green: true` to your `sovergrid.yaml`, your code will only be routed to providers that are powered by renewable energy. This feature ensures that your infrastructure has a lower carbon footprint, and it will expand as more green-certified DePIN nodes join the network.

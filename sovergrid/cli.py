@@ -27,6 +27,7 @@ from sovergrid.dev_runner import run_local_dev
 from sovergrid.services.cdn import CDNService
 from sovergrid.services.blockchain import BlockchainService
 from sovergrid.services.token import TokenService
+from sovergrid.scanner import scan_project, check_env_vars_set, print_scan_report
 
 log = get_logger(__name__)
 
@@ -115,6 +116,26 @@ def deploy(config):
     # Load and validate config
     cfg = SoverGridConfig.load(config)
 
+    # ── Pre-flight Dependency Scan ───────────────────────────────────────────
+    # Scan the project for known SDKs and warn about missing env vars
+    # BEFORE touching the blockchain or paying anything.
+    log.info(f"  {Colors.BOLD}Running pre-flight dependency scan...{Colors.RESET}")
+    detected = scan_project(os.getcwd())
+    missing = check_env_vars_set(detected, existing_env=cfg.env_vars)
+    print_scan_report(detected, missing)
+
+    if missing:
+        log.info(
+            f"  {Colors.YELLOW}You have {len(missing)} missing variable(s).{Colors.RESET}\n"
+            f"  Set them now (free) before deployment:\n"
+            f"  {Colors.CYAN}sovergrid env set KEY=value{Colors.RESET}\n\n"
+            f"  Or add them to the 'env:' block in your sovergrid.yaml and re-run.\n"
+        )
+        if not click.confirm("  Continue deployment anyway?", default=False):
+            log.info("Deployment cancelled. Set your env vars and try again.")
+            return
+    # ────────────────────────────────────────────────────────────────────────
+
     # Run the async deployment pipeline
     result = asyncio.run(run_deployment(cfg))
 
@@ -167,14 +188,26 @@ def init(port):
             "  and run 'sovergrid init' again."
         )
 
-    # Step 3: Summary
+    # Step 3: Dependency scan — surface required env vars from the project
+    detected = scan_project(cwd)
+    missing = check_env_vars_set(detected)
+    if detected:
+        print_scan_report(detected, missing)
+        if missing:
+            log.info(
+                f"  {Colors.YELLOW}Add the missing variables above to the 'env:' block\n"
+                f"  in your sovergrid.yaml before you deploy.{Colors.RESET}\n"
+            )
+
+    # Step 4: Summary
     log.info(
         f"\n  {Colors.BOLD}{Colors.GREEN}"
         f"  Project initialized successfully.{Colors.RESET}\n\n"
         f"  Next steps:\n"
         f"  1. Review your {CONFIG_FILENAME}\n"
-        f"  2. Run {Colors.CYAN}sovergrid dev{Colors.RESET} to test locally\n"
-        f"  3. Run {Colors.CYAN}sovergrid deploy{Colors.RESET} "
+        f"  2. Set env vars: {Colors.CYAN}sovergrid env set KEY=value{Colors.RESET}\n"
+        f"  3. Run {Colors.CYAN}sovergrid dev{Colors.RESET} to test locally\n"
+        f"  4. Run {Colors.CYAN}sovergrid deploy{Colors.RESET} "
         f"to deploy\n"
     )
 
