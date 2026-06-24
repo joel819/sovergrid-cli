@@ -78,6 +78,21 @@ sovergrid dev
 sovergrid deploy
 ```
 
+### 5. Launch Your Own Token (Optional)
+
+If your project needs its own cryptocurrency or governance token, SoverGrid can deploy a standard ERC-20 contract for you directly from the CLI. No Solidity knowledge required.
+
+```bash
+sovergrid token
+# You will be prompted for:
+#   Token Name:   My Project Token
+#   Token Symbol: MPT
+#   Total Supply: 1000000
+#   Network:      sepolia (testnet) or mainnet
+```
+
+Once deployed, you will receive a contract address. Add it to your `sovergrid.yaml` under `token.contract_address` and your live website can connect to it automatically.
+
 ## Commands
 
 ### Full Stack
@@ -113,7 +128,7 @@ SoverGrid supports eco-friendly deployments. By adding `green: true` to your `so
 
 ## Configuration
 
-SoverGrid uses a `sovergrid.yaml` file in your project root:
+SoverGrid uses a `sovergrid.yaml` file in your project root. Run `sovergrid init` to generate one automatically.
 
 ```yaml
 app:
@@ -129,19 +144,38 @@ compute:
 storage:
   provider: "filecoin"
 
-security:
-  provider: "lit-protocol"
-  features:
-    - "decentralized_kms"
-    - "ddos_protection"
-
 build:
   port: 8080
 
 payment:
   token: "USDC"
   max_budget: 5.00
+
+# --- Environment Variables ---
+# Inject secrets into your container at runtime.
+# These are encrypted and never stored in plain text on-chain.
+# Works exactly like Railway's Variables tab or Docker --env-file.
+env:
+  DATABASE_URL: "postgresql://user:pass@host/db"
+  STRIPE_SECRET_KEY: "sk_live_xxxx"
+  NODE_ENV: "production"
+  OPENAI_API_KEY: "sk-xxxx"
+
+# --- Token Launch (Optional) ---
+# Deploy your own ERC-20 token to the blockchain alongside your app.
+# Uncomment this block and run: sovergrid token
+# token:
+#   name: "My Project Token"
+#   symbol: "MPT"
+#   supply: 1000000
+#   network: "sepolia"   # use 'mainnet' when ready to go live
 ```
+
+### Environment Variables Explained
+
+The `env:` block works exactly like environment variables on Railway, Heroku, or Vercel. The values you put here are injected directly into your container when it boots on the decentralized network. Your app reads them with `os.environ.get("DATABASE_URL")` or `process.env.DATABASE_URL` exactly the same as in traditional cloud.
+
+> **Security note:** Never commit real API keys to your `sovergrid.yaml`. Use the `env:` block only for values you are comfortable having in your project config. For production secrets, use `sovergrid.yaml` to reference environment variable names and set the real values in your local `.env` file instead.
 
 ## Cost Breakdown
 
@@ -204,6 +238,7 @@ The `examples/` folder contains ready-to-use configs for every use case:
 | `ml-training-only.yaml` | Just train an AI model on decentralized GPUs | `sovergrid train -c examples/ml-training-only.yaml` |
 | `database-only.yaml` | Just provision a decentralized database | `sovergrid db -c examples/database-only.yaml` |
 | `cdn-only.yaml` | Just push content to a decentralized CDN | `sovergrid cdn -c examples/cdn-only.yaml` |
+| `token-launch.yaml` | Deploy a website + launch an ERC-20 token | `sovergrid deploy` then `sovergrid token` |
 | `full-stack.yaml` | Complete infrastructure (all 5 services) | All commands |
 
 ## License
