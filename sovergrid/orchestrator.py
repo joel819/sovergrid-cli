@@ -151,7 +151,8 @@ async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreak
                     "cpu": config.cpu,
                     "memory": config.memory
                 },
-                "transaction_hash": tx_hash
+                "transaction_hash": tx_hash,
+                "env_vars": config.env_vars  # User secrets from sovergrid.yaml [env:] block
             }
             api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
             response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)
