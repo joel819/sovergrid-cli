@@ -18,10 +18,14 @@ log = get_logger(__name__)
 # Default Sepolia RPC (same one from Hardhat config)
 DEFAULT_RPC_URL = "https://sepolia.drpc.org"
 
-# Load environment variables from the smart-contracts folder 
-# (so we don't have to copy the .env around for now)
+# Load environment variables — two-step priority:
+#   1. CWD .env — works for anyone who installs via `pip install sovergrid`
+#      and keeps a .env in their project root (the common case).
+#   2. Smart-contracts sibling dir .env — used during local monorepo development.
+#      Silently skipped if the path doesn't exist (e.g., on PyPI installs).
+load_dotenv()  # fallback: CWD .env
 SMART_CONTRACTS_DIR = Path(__file__).parent.parent.parent.parent / "sovergrid-smart-contracts"
-load_dotenv(dotenv_path=SMART_CONTRACTS_DIR / ".env")
+load_dotenv(dotenv_path=SMART_CONTRACTS_DIR / ".env")  # override: smart-contracts .env
 
 class BlockchainService:
     """
