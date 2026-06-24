@@ -189,7 +189,7 @@ When you run `sovergrid deploy`, here is what happens to your code:
 
 This means you get the simplicity of Vercel/Heroku, with the censorship-resistance of Web3.
 
-Each service is an **independent Python module**. They share a common `BaseService` abstract class but have zero dependencies on each other. A bug in `ml_training.py` cannot break `compute.py`.
+SoverGrid's services are fully modular. You only use the services you need, and they operate completely independently from one another.
 
 ## Examples
 
