@@ -105,10 +105,34 @@ Once deployed, you will receive a contract address. Add it to your `sovergrid.ya
 | `sovergrid faucet` | Mint $1,000 in free testnet USDC to test the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
 | `sovergrid dev` | Test your deployment locally via Docker for free |
-| `sovergrid deploy` | Deploy your app to the decentralized network (compute + storage) |
+| `sovergrid deploy` | Deploy your app to the decentralized network — costs $5 USDC |
 | `sovergrid token` | Deploy your own ERC-20 token to the blockchain |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
+
+### Environment Variables (FREE)
+
+These commands let you manage environment variables on a running deployment **without paying the $5 fee again**. They do not create a new compute lease — they only update the stored config.
+
+| Command | Description |
+|---------|-------------|
+| `sovergrid env set KEY=VALUE` | Add or update one or more environment variables |
+| `sovergrid env set K1=V1 K2=V2` | Set multiple variables in one command |
+| `sovergrid env list` | List all configured variable keys (values are hidden) |
+| `sovergrid env unset KEY` | Remove an environment variable |
+
+Example workflow — fix a mistake without redeploying:
+
+```bash
+# You deployed but used the wrong database URL
+sovergrid env set DATABASE_URL=postgresql://correct-host/db
+
+# Confirm it was saved
+sovergrid env list
+
+# Remove an old variable you no longer need
+sovergrid env unset OLD_API_KEY
+```
 
 ### Standalone Services
 

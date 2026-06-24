@@ -622,6 +622,201 @@ def token(name, symbol, supply, network):
         )
 
 
+
+# ─── Environment Variable Management (FREE — No Payment Required) ─────────────
+
+@cli.group()
+def env():
+    """
+    Manage environment variables for a running deployment. FREE — no payment needed.
+
+    Use these commands to update, list, or remove environment variables without
+    paying the $5 deployment fee again.
+
+    \b
+    Examples:
+        sovergrid env set DATABASE_URL=postgresql://...
+        sovergrid env set STRIPE_KEY=sk_live_xxx API_SECRET=abc123
+        sovergrid env list
+        sovergrid env unset OLD_KEY
+    """
+    pass
+
+
+@env.command("set")
+@click.argument("pairs", nargs=-1, required=True)
+@click.option("--app", "-a", default=None, help="App name (defaults to app.name in sovergrid.yaml).")
+def env_set(pairs, app):
+    """
+    Set or update one or more environment variables. FREE.
+
+    Pass variables as KEY=VALUE pairs. Multiple pairs allowed at once.
+
+    \b
+    Examples:
+        sovergrid env set DATABASE_URL=postgresql://user:pass@host/db
+        sovergrid env set STRIPE_KEY=sk_live_xxx NODE_ENV=production
+    """
+    if not app:
+        try:
+            cfg = SoverGridConfig.load()
+            app = cfg.app_name
+        except SystemExit:
+            log.error("Could not read sovergrid.yaml. Pass --app your-app-name explicitly.")
+            return
+
+    env_vars = {}
+    for pair in pairs:
+        if "=" not in pair:
+            log.error(f"Invalid format: '{pair}'. Use KEY=VALUE format.")
+            return
+        key, _, value = pair.partition("=")
+        env_vars[key.strip()] = value.strip()
+
+    if not env_vars:
+        log.error("No valid KEY=VALUE pairs found.")
+        return
+
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Updating {len(env_vars)} variable(s) for '{Colors.CYAN}{app}{Colors.RESET}'...\n")
+
+    api_url = os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+    try:
+        with open(CREDENTIALS_FILE, "r") as f:
+            creds = json.load(f)
+        auth_headers = {"Authorization": f"Bearer {creds.get('access_token', '')}"}
+    except FileNotFoundError:
+        log.error("Not authenticated. Run 'sovergrid login' first.")
+        return
+
+    try:
+        response = httpx.patch(
+            f"{api_url}/deploy/env",
+            json={"app_name": app, "env_vars": env_vars},
+            headers=auth_headers,
+            timeout=15.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        log.info(f"  {Colors.GREEN}Variables updated successfully.{Colors.RESET}")
+        log.info(f"  Updated keys: {Colors.CYAN}{', '.join(env_vars.keys())}{Colors.RESET}")
+        log.info(f"  Total vars:   {data.get('total_vars', '?')}")
+        log.info(f"\n  {Colors.DIM}{data.get('note', '')}{Colors.RESET}\n")
+
+    except httpx.HTTPStatusError as e:
+        log.error(f"Failed to update variables: {e.response.text}")
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
+@env.command("list")
+@click.option("--app", "-a", default=None, help="App name (defaults to app.name in sovergrid.yaml).")
+def env_list(app):
+    """
+    List all environment variable keys for your running deployment.
+
+    Values are hidden for security — only key names are returned.
+    """
+    if not app:
+        try:
+            cfg = SoverGridConfig.load()
+            app = cfg.app_name
+        except SystemExit:
+            log.error("Could not read sovergrid.yaml. Pass --app your-app-name explicitly.")
+            return
+
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Fetching env vars for '{Colors.CYAN}{app}{Colors.RESET}'...\n")
+
+    api_url = os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+    try:
+        with open(CREDENTIALS_FILE, "r") as f:
+            creds = json.load(f)
+        auth_headers = {"Authorization": f"Bearer {creds.get('access_token', '')}"}
+    except FileNotFoundError:
+        log.error("Not authenticated. Run 'sovergrid login' first.")
+        return
+
+    try:
+        response = httpx.get(
+            f"{api_url}/deploy/env/{app}",
+            headers=auth_headers,
+            timeout=15.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        keys = data.get("env_keys", [])
+        count = data.get("count", 0)
+
+        if count == 0:
+            log.info(f"  No environment variables set for '{app}'.")
+            log.info(f"  Run {Colors.CYAN}sovergrid env set KEY=VALUE{Colors.RESET} to add one.")
+        else:
+            log.info(f"  {Colors.BOLD}{count} variable(s) configured:{Colors.RESET}")
+            for key in keys:
+                log.info(f"    {Colors.GREEN}{key}{Colors.RESET}=<hidden>")
+            log.info(f"\n  {Colors.DIM}Values are hidden to protect your secrets.{Colors.RESET}\n")
+
+    except httpx.HTTPStatusError as e:
+        log.error(f"Failed to list variables: {e.response.text}")
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
+@env.command("unset")
+@click.argument("key")
+@click.option("--app", "-a", default=None, help="App name (defaults to app.name in sovergrid.yaml).")
+def env_unset(key, app):
+    """
+    Remove an environment variable from a running deployment. FREE.
+
+    \b
+    Example:
+        sovergrid env unset OLD_DATABASE_URL
+    """
+    if not app:
+        try:
+            cfg = SoverGridConfig.load()
+            app = cfg.app_name
+        except SystemExit:
+            log.error("Could not read sovergrid.yaml. Pass --app your-app-name explicitly.")
+            return
+
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Removing '{Colors.CYAN}{key}{Colors.RESET}' from '{app}'...\n")
+
+    api_url = os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+    try:
+        with open(CREDENTIALS_FILE, "r") as f:
+            creds = json.load(f)
+        auth_headers = {"Authorization": f"Bearer {creds.get('access_token', '')}"}
+    except FileNotFoundError:
+        log.error("Not authenticated. Run 'sovergrid login' first.")
+        return
+
+    try:
+        response = httpx.delete(
+            f"{api_url}/deploy/env/{app}/{key}",
+            headers=auth_headers,
+            timeout=15.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        log.info(f"  {Colors.GREEN}Variable '{key}' removed.{Colors.RESET}")
+        log.info(f"  Remaining variables: {data.get('remaining_vars', '?')}\n")
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            log.error(f"Variable '{key}' not found for app '{app}'.")
+        else:
+            log.error(f"Failed to remove variable: {e.response.text}")
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
 def main():
     """Entry point for the console script."""
     cli()
