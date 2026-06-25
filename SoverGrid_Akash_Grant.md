@@ -2,7 +2,7 @@
 **Applicant:** Joel Oyewole
 **GitHub:** github.com/joel819/sovergrid-cli
 **Grant Tier:** Incubator — $6,000 AKT
-**Date:** May 2026
+**Date:** May 2026 | **Last Updated:** June 2026
 
 ---
 
@@ -10,7 +10,7 @@
 SoverGrid — The Open-Source Developer Platform for Decentralized Infrastructure
 
 ## Tagline
-One CLI command. Deploy anywhere. No AWS. No censorship.
+One CLI command. Deploy anywhere. No AWS. No censorship. Pay only for what you use.
 
 ---
 
@@ -42,17 +42,18 @@ SoverGrid fixes this.
 
 ```bash
 pip install sovergrid
-sovergrid deploy myapp.yaml
+sovergrid deploy
 ```
 
 SoverGrid is an open-source Python CLI that abstracts the full complexity of deploying to Akash. Developers write standard Python or Node.js applications — no SDL files, no AKT management, no Kubernetes knowledge required.
 
 **What SoverGrid does automatically:**
 - Detects the framework (FastAPI, Next.js, Express, etc.)
+- Scans project dependencies and warns about missing environment variables before deploy
 - Generates an optimized Dockerfile automatically
 - Submits the deployment to Akash with correct SDL configuration
-- Falls back to Spheron or Golem if Akash provider is unavailable
-- Handles all payment routing via smart contract
+- Falls back to Spheron if Akash provider is unavailable
+- Handles all payment routing via smart contract in USDC (no AKT required from the developer)
 - Returns a live URL in under 60 seconds
 
 ---
@@ -68,31 +69,48 @@ SoverGrid's target: any Python or Node.js developer who currently uses Vercel, R
 
 That is a market of millions of developers who currently have no path to Akash.
 
+**Important pricing note:** SoverGrid uses transparent, per-service pricing. Developers are never surprised by bills because the cost breakdown is shown before every deployment. No flat fees that underprice expensive workloads (like AI training) and no overcharging for simple ones.
+
 ---
 
 ## What Is Already Built
 
+> **Progress Update (June 2026):** Since the initial grant submission, significant additional infrastructure has been completed beyond what was originally committed. The items marked ✅ below were already present at submission. Items marked 🆕 have been completed since.
+
 The SoverGrid CLI is live on GitHub at github.com/joel819/sovergrid-cli.
+The SoverGrid Backend API is live on Railway at github.com/joel819/sovergrid-backend.
 
-**Completed:**
-- `sovergrid init` — scaffolds project, auto-detects framework, generates Dockerfile
-- `sovergrid deploy` — reads config, calculates cost breakdown, mock deploys with fallback chain
-- `sovergrid train` — deploys ML training to Bittensor/io.net/Gensyn
-- `sovergrid store` — pins files to Filecoin/Arweave/IPFS
-- `sovergrid db` — provisions decentralized database (Kwil/Tableland)
-- `sovergrid cdn` — deploys to decentralized CDN (Saturn/4EVERLAND)
-- Provider Plugin Architecture (ABC base class) — new providers added with one file
-- Cost protection — auto-cancels deployment if cost exceeds user budget
-- Provider fallback chain — Akash → Spheron → Golem automatic failover
+**CLI — Completed:**
+- ✅ `sovergrid init` — scaffolds project, auto-detects framework, generates Dockerfile
+- ✅ `sovergrid deploy` — reads config, verifies payment, routes to provider
+- ✅ `sovergrid train` — deploys ML training jobs to Bittensor/io.net/Gensyn
+- ✅ `sovergrid store` — pins files to Filecoin/Arweave/IPFS via Lighthouse
+- ✅ `sovergrid db` — provisions decentralized database (Kwil/Tableland)
+- ✅ `sovergrid cdn` — deploys to decentralized CDN (Saturn/4EVERLAND)
+- ✅ Provider Plugin Architecture (ABC base class) — new providers added with one Python file
+- ✅ Provider fallback chain — Akash → Spheron automatic failover
+- 🆕 `sovergrid env set/list/unset` — manage environment variables on live deployments at no charge
+- 🆕 `sovergrid subscription status/list/history` — full subscription management from CLI
+- 🆕 Smart dependency scanner — scans `requirements.txt` / `package.json` on init and deploy, warns about missing environment variables for 40+ known SDKs (Stripe, OpenAI, PostgreSQL, Redis, etc.)
 
-**Current limitation:** All provider API calls are mocked with `asyncio.sleep()`. The architecture is production-ready. Real API integration is the next phase.
+**Backend API — Completed:**
+- ✅ FastAPI backend deployed on Railway with JWT authentication
+- ✅ Web3 payment firewall — on-chain transaction verification before any deployment is processed
+- ✅ Provider strategy pattern — 6 DePIN providers behind a unified interface
+- 🆕 Per-service pricing engine (`app/core/pricing.py`) — single source of truth for all service fees
+- 🆕 Subscription billing system — `subscription_store.py` records every active deployment
+- 🆕 Subscription monitor — daily billing cron via `POST /subscriptions/billing-run`, auto-collects USDC via `transferFrom`, full grace period and suspension lifecycle
+- 🆕 `GET /pricing` public endpoint — CLI reads live pricing before showing cost to user
+- 🆕 Demo/production toggle — single `DEMO_MODE` env var switches between simulated billing and live blockchain calls
+
+**Current status:** All payment and subscription logic is complete and deployed. In `DEMO_MODE=True` (current), no real blockchain calls fire. Flipping `DEMO_MODE=False` and funding the treasury activates real USDC collection. The Akash real API integration (Milestone 1) is the remaining primary code item.
 
 ---
 
 ## Grant Milestones
 
 ### Milestone 1 — Real Akash API Integration ($4,000)
-**Deliverable:** Replace mock `_simulate_provider_call()` in `services/compute.py` with real Akash Network SDK calls.
+**Deliverable:** Replace mock `_simulate_provider_call()` in `services/akash_provider.py` with real Akash Network SDK calls.
 
 Specifically:
 - Integrate `akash-py` SDK for real SDL deployment submission
@@ -106,17 +124,20 @@ Specifically:
 ---
 
 ### Milestone 2 — Web3 Payment Routing Layer ($2,500)
-**Deliverable:** Deploy USDC payment routing contract and $SVR discount mechanism to Ethereum Sepolia testnet.
+**Deliverable:** Deploy USDC payment routing contract and subscription billing system to production.
+
+> **Progress Update (June 2026):** The subscription billing architecture is already complete in demo mode. The remaining work for this milestone is deploying the smart contracts to Base mainnet, funding the treasury, and switching `DEMO_MODE=False`.
 
 Specifically:
-- USDC payment router: Routes 100% of the base compute cost directly to the Akash provider's wallet.
-- Convenience Fee Engine: Charges a flat SaaS-style routing fee (e.g., $5.00 USDC) per deployment to the developer for the SoverGrid abstraction layer.
-- No massive percentage markups on expensive compute clusters. The fee is flat, predictable, and fair.
-- Connect Python CLI to contracts via web3.py
-- `sovergrid login` command that connects MetaMask wallet without touching private keys
+- ✅ USDC payment router architecture — routes infrastructure cost to provider, SoverGrid keeps the service margin
+- ✅ Per-service pricing engine — compute $10/month, storage $5/month, AI training $0.80/GPU hour
+- ✅ Subscription monitor — daily `transferFrom` billing via cron, grace period, suspension, termination lifecycle
+- 🔲 Deploy `SoverGridVault.sol` to Base mainnet
+- 🔲 Connect treasury private key and fund for gas
+- 🔲 Set `DEMO_MODE=False` in Railway
 
 **Timeline:** 10 weeks from grant approval
-**Verification:** Testnet contract addresses + working demo of wallet connection
+**Verification:** Mainnet contract addresses + working demo of real USDC subscription collection
 
 ---
 
@@ -185,13 +206,21 @@ SoverGrid's Provider Plugin Architecture means it is not competing with Akash or
 
 ```
 pip install sovergrid
-sovergrid deploy myapp.yaml
+sovergrid deploy
+
+✓ Scanning project dependencies...
+  → Stripe detected     STRIPE_SECRET_KEY ✓
+  → OpenAI detected     OPENAI_API_KEY ✓
+
+✓ Calculating deployment cost...
+  Services selected:  compute + storage
+  Deploy fee:         $7.00 USDC (one-time)
+  Monthly billing:    $15.00 USDC/month (auto-collected from vault)
 
 ✓ App live at: https://myapp.sovergrid.network
 ✓ Deployed on: Akash Network (EU-West)
-✓ Base Compute Cost: $10.50 USDC / month (100% routed to Akash Provider)
-✓ SoverGrid Routing Fee: $5.00 USDC (One-time flat SaaS fee)
-✓ Total Billed Today: $15.50 USDC
+✓ Subscription active. Next billing: 2026-07-25
+✓ Manage with: sovergrid subscription status
 ```
 
 Any developer. Any app. One command. Running on Akash.
