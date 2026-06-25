@@ -200,6 +200,184 @@ sovergrid env set DATABASE_URL=postgresql://user:pass@host:5432/mydb
 
 The scanner reads `requirements.txt`, `package.json`, `Pipfile`, and `pyproject.toml`. No code is sent to any server during the scan — it runs entirely on your machine.
 
+## Pricing & Services
+
+SoverGrid uses **different payment models for different services** because not every service has the same cost structure. A web app has predictable monthly costs. AI training is variable. A token deployment is a one-time action. Charging a flat price for all of them would either rip off users or lose you money.
+
+Every payment comes directly from the developer's wallet. SoverGrid never fronts compute costs. The developer's funds pay the provider. SoverGrid takes a transparent margin on every transaction.
+
+---
+
+### Service 1 — Compute (Web App / API Hosting)
+
+**Provider:** Akash Network (primary), Spheron (fallback)
+**Payment model:** One-time deployment fee + flat monthly subscription
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Deployment fee | **$5 USDC** | Container build, Akash lease setup, orchestration |
+| Monthly subscription | **$10 USDC/month** | Ongoing compute — 1 CPU, 512MB RAM, always-on |
+
+**How it works:** You pay $5 when you deploy. Your monthly $10 is automatically pulled from your wallet on the same date every month. If your wallet balance drops to zero, your app enters a 7-day grace period before being suspended.
+
+**Your cost (provider side):** ~$1.50/month on Akash
+**Your margin:** ~$8.50/month per app
+
+```bash
+# In sovergrid.yaml
+compute:
+  enabled: true
+  cpu: 1
+  memory: 512Mi
+  port: 8080
+```
+
+---
+
+### Service 2 — Decentralized Storage (Filecoin / IPFS)
+
+**Provider:** Lighthouse (Filecoin + IPFS pinning)
+**Payment model:** One-time setup fee + monthly flat per storage tier
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Setup fee | **$2 USDC** | Wallet registration, pinning setup |
+| Monthly (Starter) | **$5 USDC/month** | Up to 10GB stored on Filecoin |
+| Monthly (Growth) | **$12 USDC/month** | Up to 50GB stored on Filecoin |
+| Monthly (Scale) | **$30 USDC/month** | Up to 200GB stored on Filecoin |
+
+**How it works:** Files are pinned to IPFS and stored on Filecoin with redundancy. They are accessible via a permanent IPFS CID that never changes, even if SoverGrid goes offline.
+
+**Your cost (provider side):** ~$0.40-1.50/month depending on tier
+**Your margin:** ~$4-10/month per storage subscriber
+
+```bash
+sovergrid store upload ./my-folder
+sovergrid store list
+```
+
+---
+
+### Service 3 — Decentralized Database (Kwil SQL / Tableland)
+
+**Provider:** Kwil (SQL on-chain), Tableland (EVM-native SQL)
+**Payment model:** One-time setup fee + monthly flat subscription
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Setup fee | **$3 USDC** | Database provisioning, schema deployment |
+| Monthly | **$8 USDC/month** | Query execution, data storage up to 1GB |
+
+**How it works:** Your database runs on a decentralized SQL network. You query it exactly like PostgreSQL using standard SQL. No centralized database provider can delete your data.
+
+**Your cost (provider side):** ~$1/month
+**Your margin:** ~$7/month per database subscriber
+
+```bash
+sovergrid db create --name mydb --schema ./schema.sql
+sovergrid db query "SELECT * FROM users LIMIT 10"
+```
+
+---
+
+### Service 4 — CDN (Content Delivery Network)
+
+**Provider:** 4EVERLAND, Saturn (decentralized CDN)
+**Payment model:** One-time setup fee + monthly flat
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Setup fee | **$2 USDC** | Domain routing, edge node registration |
+| Monthly | **$5 USDC/month** | Up to 50GB bandwidth, global edge caching |
+
+**How it works:** Your static files (images, videos, JavaScript bundles) are served from decentralized edge nodes worldwide. Faster than centralized CDNs in most regions. No single company controls your content delivery.
+
+**Your cost (provider side):** ~$0.50/month
+**Your margin:** ~$4.50/month per CDN subscriber
+
+```bash
+sovergrid cdn deploy ./dist
+```
+
+---
+
+### Service 5 — AI / ML Training (GPU Compute)
+
+**Provider:** io.net, Bittensor, Gensyn
+**Payment model:** Pay-per-use from vault balance (NOT a flat monthly subscription)
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Per GPU hour | **$0.80 USDC/hr** | Decentralized GPU compute for model training |
+
+**This is the most important one to understand.** AI training costs are variable. Someone can use 1 GPU hour or 10,000 GPU hours in a month. A flat subscription would mean SoverGrid either overcharges light users or loses money on heavy users.
+
+Instead, the developer pre-funds their SoverGridVault with USDC. Every GPU hour consumed pulls $0.80 from their vault. When the vault runs low, they top it up. When the vault is empty, training pauses automatically.
+
+**You never front GPU costs.** The money is always in the developer's vault, not your pocket.
+
+**Your cost (provider side):** ~$0.30/GPU hour on decentralized networks
+**Your margin:** ~$0.50/GPU hour
+
+**Compare to centralized alternatives:**
+- AWS SageMaker: $3.06–$32.77/hr
+- Google Cloud GPU: $2.48–$24.48/hr
+- Lambda Labs: $0.80–$8.00/hr
+- **SoverGrid: $0.80/hr** — powered by decentralized GPU networks
+
+```bash
+sovergrid train --model ./train.py --gpu A100 --hours 10
+# Estimated cost: 10 × $0.80 = $8.00 USDC from your vault
+```
+
+---
+
+### Service 6 — Token Deployment (ERC-20 Smart Contract)
+
+**Provider:** Ethereum / Base / Polygon (your choice)
+**Payment model:** One-time flat fee — no monthly charge
+
+| Fee | Amount | What it covers |
+|-----|--------|---------------|
+| Deployment fee | **$20 USDC** | Smart contract compilation, deployment, verification |
+
+**How it works:** SoverGrid deploys a standard ERC-20 token contract on your chosen network. The contract is verified on-chain and ownership is transferred to your wallet immediately. You pay once and the token lives on the blockchain forever.
+
+**Your cost (provider side):** $2–5 in gas fees on Base network
+**Your margin:** ~$15–18 per token deployed
+
+```bash
+sovergrid token deploy   --name "MyToken"   --symbol "MTK"   --supply 1000000   --network base
+```
+
+---
+
+## Pricing Summary
+
+| Service | Deploy Fee | Ongoing Cost | Model |
+|---------|-----------|--------------|-------|
+| Compute (Web App) | $5 | $10/month | Subscription |
+| Storage (Filecoin) | $2 | $5–30/month | Tiered subscription |
+| Database (Kwil) | $3 | $8/month | Subscription |
+| CDN | $2 | $5/month | Subscription |
+| AI Training (GPU) | None | $0.80/GPU hour | Pay-per-use from vault |
+| Token Deployment | $20 | None | One-time |
+
+## Cost Transparency
+
+SoverGrid publishes its infrastructure costs openly so you know exactly where your money goes.
+
+| Service | You Pay | Provider Cost | SoverGrid Margin |
+|---------|---------|---------------|-----------------|
+| Compute | $10/mo | ~$1.50/mo | ~$8.50/mo (85%) |
+| Storage (10GB) | $5/mo | ~$0.40/mo | ~$4.60/mo (92%) |
+| Database | $8/mo | ~$1.00/mo | ~$7.00/mo (87%) |
+| CDN | $5/mo | ~$0.50/mo | ~$4.50/mo (90%) |
+| AI Training | $0.80/hr | ~$0.30/hr | ~$0.50/hr (62%) |
+| Token Deploy | $20 (once) | ~$3.00 gas | ~$17.00 (85%) |
+
+Traditional cloud providers (AWS, GCP, Azure) charge 300–1000% markups on compute while hiding their infrastructure costs. SoverGrid uses cheaper decentralized infrastructure and shows you the numbers openly.
+
 ## Green Compute
 
 SoverGrid supports eco-friendly deployments. By adding `green: true` to your `sovergrid.yaml`, your code will only be routed to providers that are powered by renewable energy. This feature ensures that your infrastructure has a lower carbon footprint, and it will expand as more green-certified DePIN nodes join the network.
