@@ -4,7 +4,7 @@
 
 📚 **[Read the Official Developer Documentation](https://sovergrid-docs.vercel.app)**
 
-SoverGrid is an open-source command-line tool that deploys your applications to decentralized networks (Akash, Filecoin, Spheron, Golem) with a single command. No rewriting code. No centralized gatekeepers. No surprise bills.
+SoverGrid is an open-source command-line tool that deploys your applications to decentralized networks — Akash Network, Filecoin, Spheron, Kwil — with a single command. No rewriting code. No centralized gatekeepers. No surprise bills. Each service has transparent, per-service pricing so you only pay for exactly what you use.
 
 ## Why SoverGrid?
 
@@ -12,20 +12,24 @@ Traditional cloud platforms (AWS, Railway, Vercel) can shut down your server, sp
 
 **For Web2 Developers:** You don't need to learn blockchain. Write your normal Python or Node.js app, and SoverGrid handles the rest. It auto-generates Dockerfiles, calculates costs, and deploys to the cheapest available decentralized network.
 
-**For Web3 Builders:** Deployments cost a flat $5 fee in USDC. Every transaction is transparent and payment is instantly verified on-chain.
+**For Web3 Builders:** Payments are in USDC and verified on-chain. Every transaction is transparent. Pricing is per service — deploying a web app costs $5 upfront and $10/month. Training an AI model costs $0.80 per GPU hour. You only pay for what you actually use, pulled directly from your own wallet. SoverGrid never holds your funds.
 
 ## Current Status (Beta Phase 1 - Live Demo)
 
-SoverGrid is currently in **Beta Phase 1**, designed specifically as a working proof-of-concept for investors and early developers. 
+SoverGrid is currently in **Beta Phase 1**, designed specifically as a working proof-of-concept for investors and early developers.
+
+> **Built on Akash Network.** SoverGrid's primary compute layer runs on [Akash Network](https://akash.network) — the leading decentralized cloud marketplace. Akash enables permissionless, censorship-resistant deployments at 60-85% lower cost than traditional cloud providers. SoverGrid is an active Akash ecosystem builder.
 
 **What is currently working 100% (The Financial Plumbing):**
-- **Web3 Payment Routing:** When a developer runs `sovergrid deploy`, the CLI securely connects to the blockchain, signs a transaction with their private key, and pays the decentralized network in USDC.
-- **Smart Contract Automated Routing:** The Payment Router smart contract automatically directs the base cost to the provider and routes the Convenience Fee to the SoverGrid protocol.
-- **Orchestration Logic:** The CLI properly parses the `sovergrid.yaml` file, calculates costs, and checks for budget limits.
+- **Per-Service Pricing Engine:** Each service (compute, storage, database, CDN, AI training, token deployment) has its own fee and billing model. Developers pay only for what they use — no flat fees that overprice simple workloads or underprice expensive ones like AI training.
+- **Web3 Payment Routing:** When a developer runs `sovergrid deploy`, the CLI securely connects to the blockchain, signs a transaction with their private key, and pays using USDC from their own wallet.
+- **Smart Contract Automated Routing:** The Payment Router smart contract automatically directs the infrastructure cost to the provider and routes the SoverGrid service margin to the protocol treasury.
+- **Subscription Billing Engine:** Monthly compute subscriptions are automatically collected on the billing date via `transferFrom` on-chain — no manual invoices, no failed payments going unnoticed.
+- **Orchestration Logic:** The CLI parses `sovergrid.yaml`, calculates the exact cost for the requested services, and calls the SoverGrid backend API.
 
 **Infrastructure Provisioning:**
-- **Decentralized Network Integration:** In this beta phase, the connection to Akash, Spheron, and Golem operates via our Phase 1 Testnet routing protocols.
-- **Next Steps:** With V1 release, the protocol will transition from Testnet to Mainnet, connecting the live financial engine directly to Mainnet Akash, Filecoin, and Bittensor nodes.
+- **Decentralized Network Integration:** In this beta phase, the connection to Akash, Spheron, and Filecoin operates via our Phase 1 demo protocols.
+- **Next Steps:** With V1 release, the protocol will transition to Mainnet, connecting the live financial engine directly to Mainnet Akash, Filecoin, and Bittensor nodes.
 
 ## Quick Start
 
@@ -105,14 +109,14 @@ Once deployed, you will receive a contract address. Add it to your `sovergrid.ya
 | `sovergrid faucet` | Mint $1,000 in free testnet USDC to test the CLI |
 | `sovergrid init` | Scaffold a new project (generates sovergrid.yaml and Dockerfile) |
 | `sovergrid dev` | Test your deployment locally via Docker for free |
-| `sovergrid deploy` | Deploy your app to the decentralized network — costs $5 USDC |
+| `sovergrid deploy` | Deploy your app — fee depends on services selected (compute: $5 upfront, AI training: $0.80/GPU hr) |
 | `sovergrid token` | Deploy your own ERC-20 token to the blockchain |
 | `sovergrid status` | Check the status of your active deployment |
 | `sovergrid info` | Display SoverGrid version and current config |
 
 ### Environment Variables (FREE)
 
-These commands let you manage environment variables on a running deployment **without paying the $5 fee again**. They do not create a new compute lease — they only update the stored config.
+These commands let you manage environment variables on a running deployment **at no charge**. They do not create a new compute lease — they only update the stored config. You never pay again just to fix a typo or rotate an API key.
 
 | Command | Description |
 |---------|-------------|
