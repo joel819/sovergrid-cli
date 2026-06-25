@@ -140,10 +140,47 @@ def deploy(config):
     result = asyncio.run(run_deployment(cfg))
 
     if result.get("compute"):
+        endpoint = result["compute"].get("endpoint", "N/A")
+        deploy_id = result["compute"].get("deployment_id", cfg.app_name)
+
         log.info(
             f"\n  {Colors.BOLD}Your app is live at:{Colors.RESET} "
-            f"{Colors.CYAN}{result['compute'].get('endpoint', 'N/A')}{Colors.RESET}\n"
+            f"{Colors.CYAN}{endpoint}{Colors.RESET}\n"
         )
+
+        # ── Register subscription (auto-called after every deploy) ────────────
+        # Reads wallet address from the local keystore / credentials file.
+        # In DEMO MODE the backend records the subscription without charging.
+        try:
+            creds = _load_credentials()
+            wallet = creds.get("wallet_address", "") if creds else ""
+
+            if wallet:
+                api_url  = _get_api_url()
+                token    = creds.get("token", "")
+                sub_resp = httpx.post(
+                    f"{api_url}/api/subscriptions/create",
+                    json={
+                        "wallet_address": wallet,
+                        "app_name":       cfg.app_name,
+                        "deployment_id":  deploy_id,
+                        "monthly_amount": 10.00,
+                    },
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10,
+                )
+                if sub_resp.status_code == 200:
+                    sub = sub_resp.json()
+                    log.info(
+                        f"  {Colors.BOLD}Subscription active.{Colors.RESET}\n"
+                        f"  Monthly compute fee : {Colors.GREEN}$10.00 USDC{Colors.RESET}\n"
+                        f"  Next billing date   : {Colors.CYAN}"
+                        f"{sub.get('next_billing_date', 'N/A')[:10]}{Colors.RESET}\n"
+                        f"  Manage             : {Colors.CYAN}sovergrid subscription status{Colors.RESET}\n"
+                    )
+        except Exception:
+            # Non-fatal — deployment succeeded even if subscription API is unreachable
+            log.warning("  Could not register subscription. Run 'sovergrid subscription status' later.")
 
 
 @cli.command()
@@ -849,6 +886,183 @@ def env_unset(key, app):
     except httpx.ConnectError:
         log.error("Could not connect to the SoverGrid backend.")
 
+
+# ─── Shared helpers ───────────────────────────────────────────────────────────
+
+def _load_credentials() -> dict:
+    """Load the local credentials file. Returns None if not logged in."""
+    try:
+        if CREDENTIALS_FILE.exists():
+            with open(CREDENTIALS_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _get_api_url() -> str:
+    return os.environ.get("SOVERGRID_API_URL", DEFAULT_API_URL)
+
+
+def _auth_headers() -> dict:
+    creds = _load_credentials()
+    token = creds.get("token") or creds.get("access_token", "")
+    return {"Authorization": f"Bearer {token}"}
+
+
+# ─── Subscription Commands ───────────────────────────────────────────────────
+
+@cli.group()
+def subscription():
+    """Manage your SoverGrid compute subscriptions."""
+    pass
+
+
+@subscription.command(name="status")
+@click.option("--app", "-a", default=None, help="App name. Defaults to sovergrid.yaml app name.")
+def subscription_status(app):
+    """Show the subscription status for a deployed app."""
+    if not app:
+        try:
+            cfg = SoverGridConfig.load()
+            app = cfg.app_name
+        except SystemExit:
+            log.error("Could not read sovergrid.yaml. Pass --app your-app-name.")
+            return
+
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Checking subscription for '{Colors.CYAN}{app}{Colors.RESET}'...\n")
+
+    try:
+        resp = httpx.get(
+            f"{_get_api_url()}/api/subscriptions/app/{app}",
+            headers=_auth_headers(),
+            timeout=10,
+        )
+        if resp.status_code == 404:
+            log.info(f"  No active subscription found for '{app}'.")
+            log.info(f"  Deploy first: {Colors.CYAN}sovergrid deploy{Colors.RESET}")
+            return
+
+        resp.raise_for_status()
+        sub = resp.json()
+
+        status_color = {
+            "active":    Colors.GREEN,
+            "grace":     Colors.YELLOW,
+            "suspended": Colors.RED,
+            "terminated":Colors.RED,
+        }.get(sub["status"], Colors.RESET)
+
+        log.info(
+            f"  App name       : {Colors.BOLD}{sub['app_name']}{Colors.RESET}\n"
+            f"  Status         : {status_color}{sub['status'].upper()}{Colors.RESET}\n"
+            f"  Monthly fee    : {Colors.GREEN}${sub['monthly_amount']:.2f} USDC{Colors.RESET}\n"
+            f"  Next billing   : {Colors.CYAN}{str(sub['next_billing_date'])[:10]}{Colors.RESET}\n"
+            f"  Wallet         : {sub['wallet_address']}\n"
+        )
+
+        if sub["status"] == "grace":
+            log.info(
+                f"  {Colors.YELLOW}Payment failed. Top up your wallet and it will\n"
+                f"  be retried within 24 hours.{Colors.RESET}\n"
+            )
+        elif sub["status"] == "suspended":
+            log.info(
+                f"  {Colors.RED}Your app is suspended. Fund your wallet to resume.{Colors.RESET}\n"
+                f"  Contact: support@sovergrid.xyz\n"
+            )
+
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
+@subscription.command(name="list")
+def subscription_list():
+    """List all subscriptions tied to your connected wallet."""
+    creds = _load_credentials()
+    wallet = creds.get("wallet_address", "")
+
+    if not wallet:
+        log.error("No wallet address found. Run 'sovergrid login' first.")
+        return
+
+    log.info(f"{Colors.BOLD}SoverGrid CLI v{__version__}{Colors.RESET}")
+    log.info(f"Subscriptions for wallet {Colors.CYAN}{wallet}{Colors.RESET}...\n")
+
+    try:
+        resp = httpx.get(
+            f"{_get_api_url()}/api/subscriptions/wallet/{wallet}",
+            headers=_auth_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        subs = data.get("subscriptions", [])
+
+        if not subs:
+            log.info("  No active subscriptions found.")
+            return
+
+        for sub in subs:
+            log.info(
+                f"  {Colors.BOLD}{sub['app_name']}{Colors.RESET}  "
+                f"[{sub['status'].upper()}]  "
+                f"${sub['monthly_amount']:.2f}/mo  "
+                f"Next: {str(sub['next_billing_date'])[:10]}"
+            )
+        log.info("")
+
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
+@subscription.command(name="history")
+@click.option("--app", "-a", default=None, help="App name. Defaults to sovergrid.yaml app name.")
+def subscription_history(app):
+    """Show payment history for a deployed app."""
+    if not app:
+        try:
+            cfg = SoverGridConfig.load()
+            app = cfg.app_name
+        except SystemExit:
+            log.error("Could not read sovergrid.yaml. Pass --app your-app-name.")
+            return
+
+    try:
+        resp = httpx.get(
+            f"{_get_api_url()}/api/subscriptions/app/{app}",
+            headers=_auth_headers(),
+            timeout=10,
+        )
+        if resp.status_code == 404:
+            log.info(f"  No subscription found for '{app}'.")
+            return
+
+        resp.raise_for_status()
+        sub  = resp.json()
+        hist = sub.get("payment_history", [])
+
+        log.info(f"\n  Payment history for '{Colors.BOLD}{app}{Colors.RESET}':\n")
+
+        if not hist:
+            log.info("  No payments recorded yet.")
+            return
+
+        for p in hist:
+            demo_flag = " [DEMO]" if p.get("demo") else ""
+            log.info(
+                f"  {str(p['timestamp'])[:10]}  "
+                f"${p['amount']:.2f} USDC  "
+                f"tx: {p['tx_hash'][:20]}...{demo_flag}"
+            )
+        log.info("")
+
+    except httpx.ConnectError:
+        log.error("Could not connect to the SoverGrid backend.")
+
+
+# ─── Entry point ─────────────────────────────────────────────────────────────
 
 def main():
     """Entry point for the console script."""
