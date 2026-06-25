@@ -16,6 +16,7 @@ from pathlib import Path
 from sovergrid.config import SoverGridConfig
 from sovergrid.logger import get_logger, Colors
 from sovergrid.services.compute import COMPUTE_PROVIDERS
+from sovergrid.scanner import scan_project
 
 log = get_logger(__name__)
 
@@ -144,6 +145,10 @@ async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreak
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
+            # Scan project to get detected packages for backend anti-fraud validation
+            detected = scan_project(os.getcwd())
+            detected_pkg_names = [sdk.package.lower() for sdk in detected]
+
             payload = {
                 "app_name": config.app_name,
                 "provider": provider.lower(),
@@ -152,7 +157,8 @@ async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreak
                     "memory": config.memory
                 },
                 "transaction_hash": tx_hash,
-                "env_vars": config.env_vars  # User secrets from sovergrid.yaml [env:] block
+                "env_vars": config.env_vars,        # User secrets from sovergrid.yaml
+                "detected_packages": detected_pkg_names,  # Anti-fraud: what scanner found
             }
             api_url = os.environ.get("SOVERGRID_API_URL", "https://web-production-4966c.up.railway.app")
             response = await client.post(f"{api_url}/deploy", json=payload, headers=auth_headers)

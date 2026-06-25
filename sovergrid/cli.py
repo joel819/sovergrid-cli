@@ -27,7 +27,7 @@ from sovergrid.dev_runner import run_local_dev
 from sovergrid.services.cdn import CDNService
 from sovergrid.services.blockchain import BlockchainService
 from sovergrid.services.token import TokenService
-from sovergrid.scanner import scan_project, check_env_vars_set, print_scan_report
+from sovergrid.scanner import scan_project, check_env_vars_set, print_scan_report, check_service_type_fraud
 
 log = get_logger(__name__)
 
@@ -134,7 +134,27 @@ def deploy(config):
         if not click.confirm("  Continue deployment anyway?", default=False):
             log.info("Deployment cancelled. Set your env vars and try again.")
             return
+
+    # ── Anti-Fraud: Service Type Enforcement ─────────────────────────────────────
+    # Cross-check the declared service types in sovergrid.yaml against what packages
+    # were actually detected. GPU training packages CANNOT be deployed under 'compute'
+    # to avoid bypassing the pay-per-use billing model.
+    declared_services = list(cfg.service_types) if hasattr(cfg, "service_types") and cfg.service_types else [cfg.service_type]
+    violations = check_service_type_fraud(declared_services, detected)
+
+    if violations:
+        log.error(f"\n  {Colors.RED}{Colors.BOLD}DEPLOYMENT BLOCKED: Service type mismatch detected.{Colors.RESET}")
+        for v in violations:
+            log.error(f"\n  {Colors.RED}{v['message']}{Colors.RESET}")
+        log.error(
+            f"\n  {Colors.YELLOW}This check exists to ensure fair billing.{Colors.RESET}\n"
+            f"  GPU workloads are billed at $0.80/GPU hour, not a flat subscription rate.\n"
+            f"  Contact support@sovergrid.network if you believe this is a false positive.\n"
+        )
+        return
     # ────────────────────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+
 
     # Run the async deployment pipeline
     result = asyncio.run(run_deployment(cfg))

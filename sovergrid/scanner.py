@@ -271,7 +271,7 @@ SDK_REGISTRY = {
         ],
     },
 
-    # ── AI / LLM APIs ──────────────────────────────────────────────────────────
+    # ── AI / LLM APIs (API-call only — these are web apps using AI, not GPU trainers) ─────
     "openai": {
         "label": "OpenAI",
         "category": "ai",
@@ -307,6 +307,106 @@ SDK_REGISTRY = {
             {"key": "PINECONE_API_KEY",     "description": "Pinecone API key",      "required": True},
             {"key": "PINECONE_ENVIRONMENT", "description": "Pinecone environment",  "required": True},
         ],
+    },
+
+    # ── GPU Training Packages (BILLING-SENSITIVE: require ml_training service) ─────────────
+    # Any project containing these packages MUST use `sovergrid train`, not `sovergrid deploy`.
+    # They indicate actual model training that consumes GPU hours billed at $0.80/GPU hour.
+    # These are checked separately in detect_required_service_types().
+    "torch": {
+        "label": "PyTorch (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "tensorflow": {
+        "label": "TensorFlow (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "keras": {
+        "label": "Keras (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "jax": {
+        "label": "JAX (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "flax": {
+        "label": "Flax / JAX (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "diffusers": {
+        "label": "HuggingFace Diffusers (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "transformers": {
+        "label": "HuggingFace Transformers (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "peft": {
+        "label": "PEFT / LoRA Fine-tuning (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "trl": {
+        "label": "TRL / RLHF Training (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "bittensor": {
+        "label": "Bittensor (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "accelerate": {
+        "label": "HuggingFace Accelerate (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "deepspeed": {
+        "label": "DeepSpeed (Distributed GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "lightning": {
+        "label": "PyTorch Lightning (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "xgboost": {
+        "label": "XGBoost (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "lightgbm": {
+        "label": "LightGBM (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "catboost": {
+        "label": "CatBoost (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "ray": {
+        "label": "Ray (Distributed Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "paddlepaddle": {
+        "label": "PaddlePaddle (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
+    },
+    "mxnet": {
+        "label": "MXNet (GPU Training)",
+        "category": "gpu_training",
+        "env_vars": [],
     },
 
     # ── Cloud / Infrastructure ─────────────────────────────────────────────────
@@ -464,6 +564,88 @@ def check_env_vars_set(detected_sdks: list, existing_env: dict = None) -> list:
                     "category": sdk.category,
                 })
     return missing
+
+
+# ─── GPU Training Enforcement (Anti-Fraud) ────────────────────────────────────
+
+# Packages that REQUIRE ml_training service type — they indicate actual GPU workloads.
+# A user cannot run these under `compute` (flat $10/month) because they consume
+# GPU hours billed at $0.80/GPU hour from their SoverGridVault.
+_GPU_TRAINING_PACKAGES = {
+    "torch", "tensorflow", "keras", "jax", "flax", "diffusers", "transformers",
+    "peft", "trl", "bittensor", "accelerate", "deepspeed", "lightning",
+    "xgboost", "lightgbm", "catboost", "ray", "paddlepaddle", "mxnet",
+}
+
+
+def detect_required_service_types(detected_sdks: list) -> dict:
+    """
+    Analyse scan results and return which service types the project MUST use,
+    based on what packages were detected.
+
+    Returns:
+        {
+            "required": ["ml_training"],   # service types that MUST be declared
+            "gpu_packages": ["torch", ...], # which packages triggered this
+        }
+
+    This is the anti-fraud enforcement layer. If a user has GPU training
+    packages but tries to deploy as plain `compute`, the CLI will block them
+    and explain exactly why and what to do instead.
+    """
+    gpu_packages_found = []
+    for sdk in detected_sdks:
+        if sdk.category == "gpu_training":
+            gpu_packages_found.append(sdk.label)
+
+    required = []
+    if gpu_packages_found:
+        required.append("ml_training")
+
+    return {
+        "required": required,
+        "gpu_packages": gpu_packages_found,
+    }
+
+
+def check_service_type_fraud(
+    declared_services: list,
+    detected_sdks: list,
+) -> list:
+    """
+    Cross-checks the service types the user declared in sovergrid.yaml
+    against the packages that were actually detected in their project.
+
+    Returns a list of violation dicts. Empty list means clean.
+
+    Violation example:
+        {
+            "type": "undeclared_gpu_training",
+            "message": "...",
+            "detected": ["PyTorch (GPU Training)"],
+            "required_service": "ml_training",
+        }
+    """
+    violations = []
+    enforcement = detect_required_service_types(detected_sdks)
+
+    for required_svc in enforcement["required"]:
+        if required_svc not in declared_services:
+            violations.append({
+                "type": "undeclared_gpu_training",
+                "required_service": required_svc,
+                "detected": enforcement["gpu_packages"],
+                "message": (
+                    f"GPU training packages detected but '{required_svc}' is not in your declared services.\n"
+                    f"  Detected: {', '.join(enforcement['gpu_packages'])}\n"
+                    f"  These packages run on GPU compute billed at $0.80/GPU hour.\n"
+                    f"  You cannot deploy them under 'compute' (flat $10/month subscription).\n"
+                    f"  Use: sovergrid train   — for GPU training jobs\n"
+                    f"  Or add 'ml_training' to your service_types in sovergrid.yaml."
+                )
+            })
+
+    return violations
 
 
 def print_scan_report(detected_sdks: list, missing_vars: list):
