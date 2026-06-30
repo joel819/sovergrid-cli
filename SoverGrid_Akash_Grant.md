@@ -162,7 +162,9 @@ Specifically:
 |---|---|---|
 | Developer Time (14 Weeks) | $4,500 | Funding for the 14-week development sprint required to deliver Milestones 1, 2, and 3 |
 | Infrastructure & API costs | $1,500 | Akash testnet deployments, RPC access, domain, docs hosting, and integration reserves |
-| **Total** | **$6,000** | |
+| Marketing & Growth | $2,500 | Developer onboarding incentives, targeted Twitter/LinkedIn ads for Web2 developers, and influencer partnerships to drive initial CLI adoption |
+| Community Bounties | $1,500 | Paid bounties for external developers to build templates, record tutorial videos, and write technical articles using SoverGrid |
+| **Total** | **$10,000** | |
 
 ---
 
