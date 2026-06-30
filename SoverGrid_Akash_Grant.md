@@ -75,33 +75,33 @@ That is a market of millions of developers who currently have no path to Akash.
 
 ## What Is Already Built
 
-> **Progress Update (June 2026):** Since the initial grant submission, significant additional infrastructure has been completed beyond what was originally committed. The items marked ✅ below were already present at submission. Items marked 🆕 have been completed since.
+> **Progress Update (June 2026):** Since the initial grant submission, significant additional infrastructure has been completed beyond what was originally committed. The items marked [DONE] below were already present at submission. Items marked [NEW] have been completed since.
 
 The SoverGrid CLI is live on GitHub at github.com/joel819/sovergrid-cli.
 The SoverGrid Backend API is live on Railway at github.com/joel819/sovergrid-backend.
 
 **CLI — Completed:**
-- ✅ `sovergrid init` — scaffolds project, auto-detects framework, generates Dockerfile
-- ✅ `sovergrid deploy` — reads config, verifies payment, routes to provider
-- ✅ `sovergrid train` — deploys ML training jobs to Bittensor/io.net/Gensyn
-- ✅ `sovergrid store` — pins files to Filecoin/Arweave/IPFS via Lighthouse
-- ✅ `sovergrid db` — provisions decentralized database (Kwil/Tableland)
-- ✅ `sovergrid cdn` — deploys to decentralized CDN (Saturn/4EVERLAND)
-- ✅ Provider Plugin Architecture (ABC base class) — new providers added with one Python file
-- ✅ Provider fallback chain — Akash → Spheron automatic failover
-- 🆕 `sovergrid env set/list/unset` — manage environment variables on live deployments at no charge
-- 🆕 `sovergrid subscription status/list/history` — full subscription management from CLI
-- 🆕 Smart dependency scanner — scans `requirements.txt` / `package.json` on init and deploy, warns about missing environment variables for 40+ known SDKs (Stripe, OpenAI, PostgreSQL, Redis, etc.)
+- [DONE] `sovergrid init` — scaffolds project, auto-detects framework, generates Dockerfile
+- [DONE] `sovergrid deploy` — reads config, verifies payment, routes to provider
+- [DONE] `sovergrid train` — deploys ML training jobs to Bittensor/io.net/Gensyn
+- [DONE] `sovergrid store` — pins files to Filecoin/Arweave/IPFS via Lighthouse
+- [DONE] `sovergrid db` — provisions decentralized database (Kwil/Tableland)
+- [DONE] `sovergrid cdn` — deploys to decentralized CDN (Saturn/4EVERLAND)
+- [DONE] Provider Plugin Architecture (ABC base class) — new providers added with one Python file
+- [DONE] Provider fallback chain — Akash → Spheron automatic failover
+- [NEW] `sovergrid env set/list/unset` — manage environment variables on live deployments at no charge
+- [NEW] `sovergrid subscription status/list/history` — full subscription management from CLI
+- [NEW] Smart dependency scanner — scans `requirements.txt` / `package.json` on init and deploy, warns about missing environment variables for 40+ known SDKs (Stripe, OpenAI, PostgreSQL, Redis, etc.)
 
 **Backend API — Completed:**
-- ✅ FastAPI backend deployed on Railway with JWT authentication
-- ✅ Web3 payment firewall — on-chain transaction verification before any deployment is processed
-- ✅ Provider strategy pattern — 6 DePIN providers behind a unified interface
-- 🆕 Per-service pricing engine (`app/core/pricing.py`) — single source of truth for all service fees
-- 🆕 Subscription billing system — `subscription_store.py` records every active deployment
-- 🆕 Subscription monitor — daily billing cron via `POST /subscriptions/billing-run`, auto-collects USDC via `transferFrom`, full grace period and suspension lifecycle
-- 🆕 `GET /pricing` public endpoint — CLI reads live pricing before showing cost to user
-- 🆕 Demo/production toggle — single `DEMO_MODE` env var switches between simulated billing and live blockchain calls
+- [DONE] FastAPI backend deployed on Railway with JWT authentication
+- [DONE] Web3 payment firewall — on-chain transaction verification before any deployment is processed
+- [DONE] Provider strategy pattern — 6 DePIN providers behind a unified interface
+- [NEW] Per-service pricing engine (`app/core/pricing.py`) — single source of truth for all service fees
+- [NEW] Subscription billing system — `subscription_store.py` records every active deployment
+- [NEW] Subscription monitor — daily billing cron via `POST /subscriptions/billing-run`, auto-collects USDC via `transferFrom`, full grace period and suspension lifecycle
+- [NEW] `GET /pricing` public endpoint — CLI reads live pricing before showing cost to user
+- [NEW] Demo/production toggle — single `DEMO_MODE` env var switches between simulated billing and live blockchain calls
 
 **Current status:** All payment and subscription logic is complete and deployed. In `DEMO_MODE=True` (current), no real blockchain calls fire. Flipping `DEMO_MODE=False` and funding the treasury activates real USDC collection. The Akash real API integration (Milestone 1) is the remaining primary code item.
 
@@ -129,12 +129,12 @@ Specifically:
 > **Progress Update (June 2026):** The subscription billing architecture is already complete in demo mode. The remaining work for this milestone is deploying the smart contracts to Base mainnet, funding the treasury, and switching `DEMO_MODE=False`.
 
 Specifically:
-- ✅ USDC payment router architecture — routes infrastructure cost to provider, SoverGrid keeps the service margin
-- ✅ Per-service pricing engine — compute $10/month, storage $5/month, AI training $0.80/GPU hour
-- ✅ Subscription monitor — daily `transferFrom` billing via cron, grace period, suspension, termination lifecycle
-- 🔲 Deploy `SoverGridVault.sol` to Base mainnet
-- 🔲 Connect treasury private key and fund for gas
-- 🔲 Set `DEMO_MODE=False` in Railway
+- [DONE] USDC payment router architecture — routes infrastructure cost to provider, SoverGrid keeps the service margin
+- [DONE] Per-service pricing engine — compute $10/month, storage $5/month, AI training $0.80/GPU hour
+- [DONE] Subscription monitor — daily `transferFrom` billing via cron, grace period, suspension, termination lifecycle
+- [TODO] Deploy `SoverGridVault.sol` to Base mainnet
+- [TODO] Connect treasury private key and fund for gas
+- [TODO] Set `DEMO_MODE=False` in Railway
 
 **Timeline:** 10 weeks from grant approval
 **Verification:** Mainnet contract addresses + working demo of real USDC subscription collection
@@ -208,19 +208,19 @@ SoverGrid's Provider Plugin Architecture means it is not competing with Akash or
 pip install sovergrid
 sovergrid deploy
 
-✓ Scanning project dependencies...
-  → Stripe detected     STRIPE_SECRET_KEY ✓
-  → OpenAI detected     OPENAI_API_KEY ✓
+[OK] Scanning project dependencies...
+  → Stripe detected     STRIPE_SECRET_KEY [OK]
+  → OpenAI detected     OPENAI_API_KEY [OK]
 
-✓ Calculating deployment cost...
+[OK] Calculating deployment cost...
   Services selected:  compute + storage
   Deploy fee:         $7.00 USDC (one-time)
   Monthly billing:    $15.00 USDC/month (auto-collected from vault)
 
-✓ App live at: https://myapp.sovergrid.network
-✓ Deployed on: Akash Network (EU-West)
-✓ Subscription active. Next billing: 2026-07-25
-✓ Manage with: sovergrid subscription status
+[OK] App live at: https://myapp.sovergrid.network
+[OK] Deployed on: Akash Network (EU-West)
+[OK] Subscription active. Next billing: 2026-07-25
+[OK] Manage with: sovergrid subscription status
 ```
 
 Any developer. Any app. One command. Running on Akash.
