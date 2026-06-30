@@ -180,7 +180,7 @@ Based in Cyprus. Building in public since February 2026.
 
 **GitHub:** github.com/joel819
 **LinkedIn:** linkedin.com/in/joel-oyewole-51b614125
-**X:** @joel_automate
+**X:** @joel_depin
 
 ---
 
