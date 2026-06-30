@@ -17,7 +17,7 @@ import httpx
 from sovergrid import __version__, __app_name__
 from sovergrid.logger import get_logger, Colors
 from sovergrid.config import SoverGridConfig, CONFIG_FILENAME
-from sovergrid.orchestrator import run_deployment
+from sovergrid.orchestrator import run_deployment, display_pricing_summary
 from sovergrid.dockerizer import generate_dockerfile, detect_project_type
 from sovergrid.services.compute import ComputeService
 from sovergrid.services.storage import StorageService
@@ -153,8 +153,23 @@ def deploy(config):
         )
         return
     # ────────────────────────────────────────────────────────────────────────
-    # ────────────────────────────────────────────────────────────────────────
+    # ── Pricing Approval ────────────────────────────────────────────────────
+    
+    # Generate pricing summary based on requested services
+    services_to_bill = list(declared_services)
+    if "compute" not in services_to_bill:
+        services_to_bill.insert(0, "compute")
+        
+    pricing_text = display_pricing_summary(services_to_bill)
+    
+    log.info(f"\n{Colors.CYAN}{Colors.BOLD}Deployment Cost Summary:{Colors.RESET}")
+    print(pricing_text)
+    
+    if not click.confirm(f"\n  {Colors.BOLD}Approve these charges and deploy?{Colors.RESET}", default=True):
+        log.info(f"\n{Colors.YELLOW}Deployment cancelled by user.{Colors.RESET}")
+        return
 
+    # ────────────────────────────────────────────────────────────────────────
 
     # Run the async deployment pipeline
     result = asyncio.run(run_deployment(cfg))
