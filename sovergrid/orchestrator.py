@@ -45,46 +45,22 @@ def _load_auth_headers() -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-@dataclass
-class CostBreakdown:
+def display_pricing_summary(services_selected: list) -> str:
     """
-    Represents the fee split for a single deployment.
-    Uses a SaaS-style flat routing fee per deployment.
+    Returns the simplified pricing output matching the SaaS model.
     """
-    base_cost: float          # What the compute provider charges
-    routing_fee: float        # Flat SaaS fee (e.g., $5.00) for SoverGrid
-    total: float              # What the developer actually pays
-
-    def display(self) -> str:
-        return (
-            f"\n"
-            f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
-            f"  {Colors.BOLD}Cost Breakdown{Colors.RESET}\n"
-            f"  {Colors.DIM}{'=' * 40}{Colors.RESET}\n"
-            f"  Compute ({self.provider}):    ${self.base_cost:.4f}\n"
-            f"  SoverGrid Fee:         ${self.routing_fee:.4f}\n"
-            f"  {Colors.DIM}{'-' * 40}{Colors.RESET}\n"
-            f"  {Colors.BOLD}{Colors.GREEN}Total:                  "
-            f"${self.total:.4f}{Colors.RESET}\n"
-        )
-
-    provider: str = "akash"
-
-
-def calculate_cost(base_cost: float, provider: str = "akash") -> CostBreakdown:
-    """
-    Calculates the full fee split from a base compute cost.
-    The base cost is what the decentralized network charges.
-    We tack on a flat SaaS routing fee ($5.00) per deployment.
-    """
-    routing_fee = 5.00
-    total = base_cost + routing_fee
+    # For now, hardcode the basic values, but in reality this would fetch
+    # from the /pricing backend endpoint.
+    deploy_fee = 7.00
+    monthly_fee = 15.00
+    services_str = " + ".join(services_selected) if services_selected else "compute"
     
-    return CostBreakdown(
-        base_cost=base_cost,
-        routing_fee=routing_fee,
-        total=total,
-        provider=provider,
+    return (
+        f"\n"
+        f"  [OK] Calculating deployment cost...\n"
+        f"    Services selected:  {services_str}\n"
+        f"    Deploy fee:         ${deploy_fee:.2f} USDC (one-time)\n"
+        f"    Monthly billing:    ${monthly_fee:.2f} USDC/month (auto-collected from vault)\n"
     )
 
 
@@ -371,12 +347,13 @@ async def run_deployment(config: SoverGridConfig) -> dict:
             active_provider = green_providers[0]
             log.warning(f"Auto-switching to green provider: '{active_provider}'")
 
-    base_compute_cost = round(random.uniform(0.30, 0.80), 4)
-    cost = calculate_cost(base_compute_cost, provider=active_provider)
+    # Cost is now flat-rate
+    deploy_fee = 7.00
+    monthly_fee = 15.00
 
-    # 1. Cost Protection Check
-    if cost.total > config.max_budget:
-        log.error(f"Deployment canceled! Provider cost (${cost.total:.4f}) exceeds your max_budget (${config.max_budget:.4f}).")
+    # 1. Cost Protection Check (optional now that it's flat rate, but keeping logic)
+    if deploy_fee > getattr(config, 'max_budget', 100.0):
+        log.error(f"Deployment canceled! Deploy fee (${deploy_fee:.2f}) exceeds your max_budget (${config.max_budget:.2f}).")
         return None
 
     # 2. Simulate Provider Outage & Fallback
@@ -385,18 +362,14 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         log.error("Akash Network is currently unreachable or bidding failed.")
         log.warning("Attempting automatic fallback to Spheron Network...")
         
-        fallback_base_cost = round(random.uniform(0.40, 0.90), 4)
-        fallback_cost = calculate_cost(fallback_base_cost, provider="spheron")
-        
         # Protect against expensive fallbacks!
-        if fallback_cost.total > config.max_budget:
-            log.error(f"Fallback to Spheron canceled. Cost (${fallback_cost.total:.4f}) exceeds your max_budget (${config.max_budget:.4f}).")
+        if deploy_fee > getattr(config, 'max_budget', 100.0):
+            log.error(f"Fallback to Spheron canceled. Cost (${deploy_fee:.2f}) exceeds your max_budget (${config.max_budget:.2f}).")
             log.error("Please increase your max_budget in sovergrid.yaml or try again later.")
             return None
             
         log.info(f"{Colors.GREEN}Fallback approved. Spheron is within budget.${Colors.RESET}")
         active_provider = "spheron"
-        cost = fallback_cost
 
     # 2b. Database Fallback Logic
     db_provider = config.database_provider
@@ -407,7 +380,7 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         log.info(f"{Colors.GREEN}Database fallback approved. Tableland selected.{Colors.RESET}")
 
     # 3. Run compute, storage, database, and frontend deployments concurrently
-    compute_task = deploy_compute(config, provider=active_provider, cost=cost)
+    compute_task = deploy_compute(config, provider=active_provider, cost=None)
     storage_task = deploy_to_filecoin(config)
     database_task = deploy_database(config, provider=db_provider)
     frontend_task = deploy_frontend(config)
@@ -428,7 +401,7 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         )
         if fe_result:
             output += f"  Frontend URL: {Colors.CYAN}{Colors.UNDERLINE}{fe_result.get('endpoint')}{Colors.RESET}\n"
-        output += f"{cost.display()}"
+        output += f"{display_pricing_summary(['compute', 'storage'])}"
         log.info(output)
         log.info("=" * 60)
         log.info(f"{Colors.YELLOW}SoverGrid Beta Phase 1 Completed.{Colors.RESET}")
