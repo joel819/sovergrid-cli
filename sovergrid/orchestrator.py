@@ -80,42 +80,17 @@ async def _simulate_api_call(provider: str, action: str, duration: float):
     await asyncio.sleep(duration * 0.3)
 
 
-async def deploy_compute(config: SoverGridConfig, provider: str, cost: CostBreakdown) -> dict:
+async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
     """
     Simulates deploying a containerized app to a compute network by routing
     the request through the local FastAPI backend.
     """
-    from sovergrid.services.blockchain import BlockchainService
-
     log.info(
         f"Deploying '{config.app_name}' to {provider.title()} Network "
         f"via SoverGrid Backend..."
     )
 
     auth_headers = _load_auth_headers()
-
-    # Step 1: Web3 Payment Routing
-    blockchain = BlockchainService()
-    if not blockchain.is_connected:
-        log.error(f"{Colors.RED}Deployment failed. Cannot connect to blockchain.{Colors.RESET}")
-        return None
-        
-    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for {cost.total:.4f} USDC...{Colors.RESET}")
-    
-    # Check balance before attempting to pay
-    balance = blockchain.get_token_balance()
-    if balance is not None and balance < cost.total:
-        log.error(f"{Colors.RED}Insufficient USDC balance ({balance:.4f} USDC).{Colors.RESET}")
-        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get $1,000 in free testnet USDC.{Colors.RESET}")
-        return None
-
-    # Resolve provider wallet
-    provider_wallet = "0x" + "1" * 40  # Placeholder for routing resolution
-    tx_hash = blockchain.pay_for_deployment(cost.total, provider_wallet)
-    
-    if not tx_hash:
-        log.error(f"{Colors.RED}Deployment aborted. Payment failed.{Colors.RESET}")
-        return None
 
     log.info(f"{Colors.GREEN}Payment Secured. Transaction Hash: {tx_hash}{Colors.RESET}")
 
@@ -209,30 +184,9 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
 async def deploy_database(config: SoverGridConfig, provider: str) -> dict:
     if not provider:
         return None
-    from sovergrid.services.blockchain import BlockchainService
     log.info(f"Deploying database to {provider.title()} Network via SoverGrid Backend...")
     
     auth_headers = _load_auth_headers()
-    blockchain = BlockchainService()
-    if not blockchain.is_connected:
-        log.error(f"{Colors.RED}Database deployment failed. Cannot connect to blockchain.{Colors.RESET}")
-        return None
-        
-    db_cost = 2.50 if provider == "kwil" else 1.80
-    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for Database ({db_cost:.4f} USDC)...{Colors.RESET}")
-    
-    # Check balance before attempting to pay
-    balance = blockchain.get_token_balance()
-    if balance is not None and balance < db_cost:
-        log.error(f"{Colors.RED}Insufficient USDC balance for Database ({balance:.4f} USDC).{Colors.RESET}")
-        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get free testnet USDC.{Colors.RESET}")
-        return None
-
-    provider_wallet = "0x" + "2" * 40
-    tx_hash = blockchain.pay_for_deployment(db_cost, provider_wallet)
-    
-    if not tx_hash:
-        return None
         
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -264,30 +218,9 @@ async def deploy_database(config: SoverGridConfig, provider: str) -> dict:
 async def deploy_frontend(config: SoverGridConfig) -> dict:
     if not config.frontend_provider:
         return None
-    from sovergrid.services.blockchain import BlockchainService
     log.info(f"Deploying frontend to {config.frontend_provider.title()} Network via SoverGrid Backend...")
     
     auth_headers = _load_auth_headers()
-    blockchain = BlockchainService()
-    if not blockchain.is_connected:
-        log.error(f"{Colors.RED}Frontend deployment failed. Cannot connect to blockchain.{Colors.RESET}")
-        return None
-        
-    fe_cost = 1.00
-    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for Frontend ({fe_cost:.4f} USDC)...{Colors.RESET}")
-    
-    # Check balance before attempting to pay
-    balance = blockchain.get_token_balance()
-    if balance is not None and balance < fe_cost:
-        log.error(f"{Colors.RED}Insufficient USDC balance for Frontend ({balance:.4f} USDC).{Colors.RESET}")
-        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get free testnet USDC.{Colors.RESET}")
-        return None
-
-    provider_wallet = "0x" + "3" * 40
-    tx_hash = blockchain.pay_for_deployment(fe_cost, provider_wallet)
-    
-    if not tx_hash:
-        return None
         
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -356,6 +289,29 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         log.error(f"Deployment canceled! Deploy fee (${deploy_fee:.2f}) exceeds your max_budget (${config.max_budget:.2f}).")
         return None
 
+    # Step 1.5: Web3 Payment Routing (Pay once for everything)
+    from sovergrid.services.blockchain import BlockchainService
+    blockchain = BlockchainService()
+    if not blockchain.is_connected:
+        log.error(f"{Colors.RED}Deployment failed. Cannot connect to blockchain.{Colors.RESET}")
+        return None
+
+    log.info(f"{Colors.YELLOW}Initiating Web3 Payment Routing for {deploy_fee:.2f} USDC...{Colors.RESET}")
+    balance = blockchain.get_token_balance()
+    if balance is not None and balance < deploy_fee:
+        log.error(f"{Colors.RED}Insufficient USDC balance ({balance:.4f} USDC).{Colors.RESET}")
+        log.error(f"{Colors.CYAN}Please run `sovergrid faucet` to get $1,000 in free testnet USDC.{Colors.RESET}")
+        return None
+
+    provider_wallet = "0x" + "1" * 40  # Placeholder for routing resolution
+    tx_hash = blockchain.pay_for_deployment(deploy_fee, provider_wallet)
+    
+    if not tx_hash:
+        log.error(f"{Colors.RED}Deployment aborted. Payment failed.{Colors.RESET}")
+        return None
+
+    log.info(f"{Colors.GREEN}Payment Secured. Transaction Hash: {tx_hash}{Colors.RESET}")
+
     # 2. Simulate Provider Outage & Fallback
     # Simulate network instability for fallback testing if requested
     if active_provider == "akash" and random.random() < 0.2:
@@ -380,7 +336,7 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         log.info(f"{Colors.GREEN}Database fallback approved. Tableland selected.{Colors.RESET}")
 
     # 3. Run compute, storage, database, and frontend deployments concurrently
-    compute_task = deploy_compute(config, provider=active_provider, cost=None)
+    compute_task = deploy_compute(config, provider=active_provider)
     storage_task = deploy_to_filecoin(config)
     database_task = deploy_database(config, provider=db_provider)
     frontend_task = deploy_frontend(config)
@@ -422,9 +378,9 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         "database": db_result,
         "frontend": fe_result,
         "cost": {
-            "base": cost.base_cost,
-            "total": cost.total,
-            "currency": config.payment_token,
+            "base": deploy_fee,
+            "total": deploy_fee,
+            "currency": "USDC",
         },
         "elapsed_seconds": elapsed,
     }
