@@ -136,44 +136,53 @@ class BlockchainService:
     def pay_for_deployment(self, amount: float, provider_wallet: str) -> Optional[str]:
         """
         Executes the Web3 "Pay-Then-Deploy" pattern.
-        1. Approves the Aggregator contract to spend tokens.
-        2. Calls payForDeployment on the Aggregator.
+        1. Approves the Aggregator contract to spend USDC.
+        2. Calls payForDeployment on the Aggregator, which routes the flat SaaS fee
+           and sends the remainder to the provider.
         Returns the transaction hash if successful.
         """
         if not self.private_key or not self.wallet_address:
             log.error(f"{Colors.RED}Cannot process payment. No wallet found.{Colors.RESET}")
             return None
             
-        if not self.token_address or not self.aggregator_address:
-            log.error(f"{Colors.RED}Missing CONTRACT_ADDRESS or AGGREGATOR_ADDRESS in .env{Colors.RESET}")
+        if not self.mock_usdc_address or not self.aggregator_address:
+            log.error(f"{Colors.RED}Missing MOCK_USDC_ADDRESS or AGGREGATOR_ADDRESS in .env{Colors.RESET}")
             return None
             
-        if not self.token_abi or not self.aggregator_abi:
+        if not self.mock_usdc_abi or not self.aggregator_abi:
             log.error(f"{Colors.RED}Missing ABIs. Compile the contracts first.{Colors.RESET}")
             return None
 
         try:
-            checksum_token = self.w3.to_checksum_address(self.token_address)
+            checksum_usdc = self.w3.to_checksum_address(self.mock_usdc_address)
             checksum_aggregator = self.w3.to_checksum_address(self.aggregator_address)
             checksum_provider = self.w3.to_checksum_address(provider_wallet)
             
-            token_contract = self.w3.eth.contract(address=checksum_token, abi=self.token_abi)
+            usdc_contract = self.w3.eth.contract(address=checksum_usdc, abi=self.mock_usdc_abi)
             aggregator_contract = self.w3.eth.contract(address=checksum_aggregator, abi=self.aggregator_abi)
             
-            decimals = token_contract.functions.decimals().call()
+            decimals = usdc_contract.functions.decimals().call()
             raw_amount = int(amount * (10 ** decimals))
 
-            # Step 1: Approve Aggregator to spend tokens
-            log.info(f"{Colors.YELLOW}Approving {amount} tokens for payment...{Colors.RESET}")
+            # Fetch dynamic gas prices
+            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', self.w3.to_wei('1', 'gwei'))
+            max_priority = self.w3.eth.max_priority_fee
+            max_fee = int(base_fee * 1.5) + max_priority
+
+            # Step 1: Approve Aggregator to spend USDC
+            log.info(f"{Colors.YELLOW}Approving {amount} USDC for payment...{Colors.RESET}")
             nonce = self.w3.eth.get_transaction_count(self.wallet_address)
             
-            approve_txn = token_contract.functions.approve(
+            # Estimate gas for approval
+            approve_gas = usdc_contract.functions.approve(checksum_aggregator, raw_amount).estimate_gas({'from': self.wallet_address})
+            
+            approve_txn = usdc_contract.functions.approve(
                 checksum_aggregator, raw_amount
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
-                'gas': 100000,
-                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
-                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'gas': int(approve_gas * 1.2),
+                'maxFeePerGas': max_fee,
+                'maxPriorityFeePerGas': max_priority,
                 'nonce': nonce,
             })
             
@@ -182,19 +191,23 @@ class BlockchainService:
             
             # Wait for approval receipt
             self.w3.eth.wait_for_transaction_receipt(tx_hash_approve)
-            log.info(f"{Colors.GREEN}Token approval successful.{Colors.RESET}")
+            log.info(f"{Colors.GREEN}USDC approval successful.{Colors.RESET}")
             
-            # Step 2: Call payForDeployment
-            log.info(f"{Colors.YELLOW}Executing 80/20 Payment Split...{Colors.RESET}")
+            # Step 2: Call payForDeployment (SaaS Fee Model)
+            log.info(f"{Colors.YELLOW}Processing deployment payment via USDC SaaS markup...{Colors.RESET}")
             nonce = self.w3.eth.get_transaction_count(self.wallet_address)
             
+            pay_gas = aggregator_contract.functions.payForDeployment(
+                checksum_usdc, raw_amount, checksum_provider
+            ).estimate_gas({'from': self.wallet_address})
+            
             pay_txn = aggregator_contract.functions.payForDeployment(
-                checksum_token, raw_amount, checksum_provider
+                checksum_usdc, raw_amount, checksum_provider
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
-                'gas': 200000,
-                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
-                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'gas': int(pay_gas * 1.2),
+                'maxFeePerGas': max_fee,
+                'maxPriorityFeePerGas': max_priority,
                 'nonce': nonce,
             })
             
@@ -242,11 +255,18 @@ class BlockchainService:
                 log.error(f"{Colors.RED}Faucet can only mint to the calling wallet.{Colors.RESET}")
                 return False, None
             
+            # Fetch dynamic gas prices
+            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', self.w3.to_wei('1', 'gwei'))
+            max_priority = self.w3.eth.max_priority_fee
+            max_fee = int(base_fee * 1.5) + max_priority
+            
+            faucet_gas = usdc_contract.functions.faucet().estimate_gas({'from': self.wallet_address})
+            
             faucet_txn = usdc_contract.functions.faucet().build_transaction({
                 'chainId': self.w3.eth.chain_id,
-                'gas': 100000,
-                'maxFeePerGas': self.w3.to_wei('10', 'gwei'),
-                'maxPriorityFeePerGas': self.w3.to_wei('2', 'gwei'),
+                'gas': int(faucet_gas * 1.2),
+                'maxFeePerGas': max_fee,
+                'maxPriorityFeePerGas': max_priority,
                 'nonce': nonce,
             })
             
