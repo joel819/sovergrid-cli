@@ -80,7 +80,7 @@ async def _simulate_api_call(provider: str, action: str, duration: float):
     await asyncio.sleep(duration * 0.3)
 
 
-async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
+async def deploy_compute(config: SoverGridConfig, provider: str, tx_hash: str) -> dict:
     """
     Simulates deploying a containerized app to a compute network by routing
     the request through the local FastAPI backend.
@@ -91,9 +91,6 @@ async def deploy_compute(config: SoverGridConfig, provider: str) -> dict:
     )
 
     auth_headers = _load_auth_headers()
-
-    log.info(f"{Colors.GREEN}Payment Secured. Transaction Hash: {tx_hash}{Colors.RESET}")
-
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             # Scan project to get detected packages for backend anti-fraud validation
@@ -181,7 +178,7 @@ async def deploy_to_filecoin(config: SoverGridConfig) -> dict:
         return None
 
 
-async def deploy_database(config: SoverGridConfig, provider: str) -> dict:
+async def deploy_database(config: SoverGridConfig, provider: str, tx_hash: str) -> dict:
     if not provider:
         return None
     log.info(f"Deploying database to {provider.title()} Network via SoverGrid Backend...")
@@ -215,7 +212,7 @@ async def deploy_database(config: SoverGridConfig, provider: str) -> dict:
         return None
 
 
-async def deploy_frontend(config: SoverGridConfig) -> dict:
+async def deploy_frontend(config: SoverGridConfig, tx_hash: str) -> dict:
     if not config.frontend_provider:
         return None
     log.info(f"Deploying frontend to {config.frontend_provider.title()} Network via SoverGrid Backend...")
@@ -336,10 +333,10 @@ async def run_deployment(config: SoverGridConfig) -> dict:
         log.info(f"{Colors.GREEN}Database fallback approved. Tableland selected.{Colors.RESET}")
 
     # 3. Run compute, storage, database, and frontend deployments concurrently
-    compute_task = deploy_compute(config, provider=active_provider)
+    compute_task = deploy_compute(config, provider=active_provider, tx_hash=tx_hash)
     storage_task = deploy_to_filecoin(config)
-    database_task = deploy_database(config, provider=db_provider)
-    frontend_task = deploy_frontend(config)
+    database_task = deploy_database(config, provider=db_provider, tx_hash=tx_hash)
+    frontend_task = deploy_frontend(config, tx_hash=tx_hash)
     
     compute_result, filecoin_result, db_result, fe_result = await asyncio.gather(
         compute_task, storage_task, database_task, frontend_task
