@@ -6,12 +6,22 @@ Provides local dry-run testing capabilities using Docker.
 import os
 import subprocess
 import sys
+import socket
 
 from sovergrid.logger import get_logger, Colors
 from sovergrid.dockerizer import detect_project_type, generate_dockerfile
 
 log = get_logger(__name__)
 
+def get_available_port(start_port: int, max_port: int = 65535) -> int:
+    """Finds the next available port starting from start_port."""
+    port = start_port
+    while port <= max_port:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
+                return port
+        port += 1
+    raise RuntimeError("No available ports found.")
 
 def run_local_dev(port: int = 3000):
     """
@@ -19,6 +29,11 @@ def run_local_dev(port: int = 3000):
     the exact environment the user will get on Akash.
     """
     cwd = os.getcwd()
+    
+    available_port = get_available_port(port)
+    if available_port != port:
+        log.info(f"{Colors.YELLOW}Port {port} is in use. Automatically switching to port {available_port}.{Colors.RESET}")
+    port = available_port
     
     log.info(f"{Colors.BOLD}{Colors.CYAN}SoverGrid Local Preview{Colors.RESET}")
     log.info("Preparing local testing environment...\n")
@@ -55,9 +70,9 @@ def run_local_dev(port: int = 3000):
         return False
 
     # Run the container
-    log.info(f"Starting local container on port {port}...")
+    log.info(f"Starting local container on port {port} (locked to localhost)...")
     run_cmd = [
-        "docker", "run", "--rm", "-p", f"{port}:{port}", "-e", f"PORT={port}", image_name
+        "docker", "run", "--rm", "-p", f"127.0.0.1:{port}:{port}", "-e", f"PORT={port}", image_name
     ]
 
     log.info(f"\n{Colors.GREEN}🚀 App running locally!{Colors.RESET}")
